@@ -282,10 +282,18 @@ public class Timer
     private float time;
     private float length;
     private bool trigger;
+    private bool runsOnce;
     #endregion
 
     #region PROPERTIES
+    /// <summary>
+    /// Set to true when timer completes.
+    /// </summary>
     public bool Trigger { get { return trigger; } }
+    /// <summary>
+    /// Returns the percentage of time elpased until the camera is at its maximum size.
+    /// </summary>
+    public float TimerPercentage { get { return time / length; } }
     #endregion
 
     #region CONSTRUCTORS
@@ -293,8 +301,10 @@ public class Timer
     /// Creates a timer that can be incremented, with a trigger to check when it is completed.
     /// </summary>
     /// <param name="_length">The length of the timer, tied to 'Time.deltaTime' (60 = 1 second).</param>
-    public Timer (float _length)
+    /// <param name="_runsOnce"> If true, timer will not repeat</param>
+    public Timer (float _length, bool _runsOnce)
     {
+        runsOnce = _runsOnce;
         length = _length;
         time = 0.0f;
         trigger = false;
@@ -302,14 +312,27 @@ public class Timer
     #endregion
 
     #region METHODS
+    /// <summary>
+    /// Increments the timer. If Runsonce is true, the timer will stop incrementing after time > length.
+    /// </summary>
+    /// <param name="_deltaTime"> Increments the timer. </param>
     public void IncrementTimer(float _deltaTime)
     {
-        time += _deltaTime;
-        trigger = (time >= length);
-        if (trigger)
+        if (runsOnce)
         {
-            time -= length;
+            time = Mathf.Min(time+_deltaTime, length);
+            trigger = (time >= length);
         }
+        else
+        {
+            time += _deltaTime;
+            trigger = (time >= length);
+            if (trigger)
+            {
+                time -= length;
+            }
+        }
+        
     }
     #endregion
 }
@@ -717,6 +740,15 @@ public class Manager : MonoBehaviour
     StationGrid stationGrid;
 
     bool isGameRunning = false;
+
+    //Camera Zoom Out
+    [SerializeField] float maxCameraTime = 600f;
+    Timer cameraZoomOutTime;
+
+    //Station Spawning
+    [SerializeField] float timeBetweenStationSpawns = 15f;
+    Timer stationSpawnTimer;
+
     #endregion
 
     #region UNITY MONOBEHAVIOR
@@ -729,16 +761,22 @@ public class Manager : MonoBehaviour
         cameraData = new CameraData (Camera.main, 5.0f, 10.0f);
         //cameraData.ToggleDebugMode();
         timers = new List<Timer> ();
-        stationGrid = new StationGrid (cameraData, 1.0f, startingStationTotal, stationMaximumTotal, 0.9f, 6.0f);
-        //stationGrid.ToggleDebugMode();
+        stationGrid = new StationGrid (cameraData, 1.0f, startingStationTotal, stationMaximumTotal, 0.9f, 3.0f);
+        stationGrid.ToggleDebugMode();
 
         // STEP 2:
         // Create starting stations.
         for (int _i = 0; _i < startingStationTotal; ++_i) { CreateStation(); }
+
+        // STEP 3:
+        // Set variables for camera size change  and station spawning.
+        cameraZoomOutTime = CreateTimer(maxCameraTime, true);
+        stationSpawnTimer = CreateTimer(timeBetweenStationSpawns, false);
+
     }
 
     // Update is called once per frame
-    void Update ()
+    void Update()
     {
         // STEP 1:
         // Increment all existing Timer class instances.
@@ -746,6 +784,11 @@ public class Manager : MonoBehaviour
 
         // STEP 2:
         // TODO - Camera scaling and spawing of stations over time.
+        cameraData.UpdateCameraSize(cameraZoomOutTime.TimerPercentage);
+        if (stationSpawnTimer.Trigger)
+        {
+            CreateStation();
+        }
     }
     #endregion
 
@@ -759,6 +802,19 @@ public class Manager : MonoBehaviour
         if (_station != null) _station.InjectStationObject(
                 Instantiate(stationPrefab, Vector3.zero, Quaternion.identity),
                 stationSprites[(int)_station.Shape]);
+    }
+
+    /// <summary>
+    /// Creates a new Timer and adds it to the timers list
+    /// </summary>
+    /// <param name="_length"> Length of the timer. </param>
+    /// <param name="_runsOnce"> Whether or not the timer will run once or will loop. </param>
+    /// <returns> Returns the newly created Timer. </returns>
+    private Timer CreateTimer(float _length, bool _runsOnce)
+    {
+        Timer _timer = new Timer (_length, _runsOnce);
+        timers.Add(_timer);
+        return _timer;
     }
 
     // Gizmos

@@ -295,6 +295,7 @@ MonoBehaviour:
   - {fileID: 21300000, guid: b27b8197b864e4b459166edd3ffe9192, type: 3}
   startingStationTotal: 2
   stationMaximumTotal: 10
+  maxCameraTime: 60
 --- !u!4 &2019560455
 Transform:
   m_ObjectHideFlags: 0
