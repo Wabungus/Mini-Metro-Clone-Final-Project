@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 /// <summary>
-/// Every station shape variant present.
+///     Every station shape variant present.
 /// </summary>
 public enum STATION_SHAPE
 {
@@ -18,94 +18,115 @@ public enum STATION_SHAPE
 public class Station
 {
     #region Fields
+
     private GameObject accessor;
     private Rect clickCollider;
     private STATION_SHAPE shape;
     private Vector2 storedTransferPosition;
+
     #endregion
 
     #region PROPERTIES
-    /// <summary>
-    /// A reference to this station's GameObject.
-    /// </summary>
-    public GameObject Accessor { get { return accessor; } }
 
     /// <summary>
-    /// The shape type of this station.
+    ///     A reference to this station's GameObject.
     /// </summary>
-    public STATION_SHAPE Shape { get { return shape; } }
-
-    /// <summary>
-    /// The x position in the scene of the station GameObject.
-    /// </summary>
-    public float PositionX 
-    { 
-        get { return accessor.transform.position.x; } 
-        set { accessor.transform.position.Set (value, accessor.transform.position.y, 0); } 
+    public GameObject Accessor
+    {
+        get { return accessor; }
     }
 
     /// <summary>
-    /// The y position in the scene of the station GameObject.
+    ///     The shape type of this station.
     /// </summary>
-    public float PositionY 
-    { 
-        get { return accessor.transform.position.y; } 
-        set { accessor.transform.position.Set (accessor.transform.position.x, value, 0); } 
+    public STATION_SHAPE Shape
+    {
+        get { return shape; }
     }
 
     /// <summary>
-    /// The x & y scale of the station GameObject (effects SpriteRenderer).
+    ///     The x position in the scene of the station GameObject.
     /// </summary>
-    public float Scale 
-    { 
-        get { return accessor.transform.localScale.x; } 
-        set { accessor.transform.localScale.Set(value, value, 1); } 
+    public float PositionX
+    {
+        get { return accessor.transform.position.x; }
+        set { accessor.transform.position.Set(value, accessor.transform.position.y, 0); }
     }
 
     /// <summary>
-    /// The collider within which you can click on this station.
+    ///     The y position in the scene of the station GameObject.
     /// </summary>
-    public Rect ClickCollider { get { return clickCollider; } }
+    public float PositionY
+    {
+        get { return accessor.transform.position.y; }
+        set { accessor.transform.position.Set(accessor.transform.position.x, value, 0); }
+    }
+
+    /// <summary>
+    ///     The x & y scale of the station GameObject (effects SpriteRenderer).
+    /// </summary>
+    public float Scale
+    {
+        get { return accessor.transform.localScale.x; }
+        set { accessor.transform.localScale.Set(value, value, 1); }
+    }
+
+    /// <summary>
+    ///     The collider within which you can click on this station.
+    /// </summary>
+    public Rect ClickCollider
+    {
+        get { return clickCollider; }
+    }
+
     #endregion
 
     #region CONSTRUCTORS
+
     /// <summary>
-    /// Creates a Station class instance, containing shortcuts to its associated station GameObject.
+    ///     Creates a Station class instance, containing shortcuts to its associated station GameObject.
     /// </summary>
     /// <param name="_storedTransferPosition">Where to place the station object once it is created.</param>
     /// <param name="_shape">The shape for this station, converts to enum format internally.</param>
     /// <param name="_icon">The Sprite to apply to the station GameObject.</param>
-    public Station (Vector2 _storedTransferPosition, int _shape)
+    public Station(Vector2 _storedTransferPosition, int _shape)
     {
         storedTransferPosition = _storedTransferPosition;
         shape = (STATION_SHAPE)_shape;
-        clickCollider = new Rect (
-                storedTransferPosition.x - 0.2f,
-                storedTransferPosition.y - 0.2f,
-                0.4f, 0.4f);
+        clickCollider = new Rect(
+            storedTransferPosition.x - 0.2f,
+            storedTransferPosition.y - 0.2f,
+            0.4f, 0.4f);
     }
+
     #endregion
 
     #region Methods
+
     /// <summary>
-    /// Injects the action GameObject of the station in since it can only be created in the main class.
+    ///     Injects the action GameObject of the station in since it can only be created in the main class.
     /// </summary>
     /// <param name="_stationGameObject">Station GameObject to inject</param>
     /// <param name="_icon">The sprite to use for this game object</param>
     public void InjectStationObject(GameObject _stationGameObject, Sprite _icon)
     {
-        if (accessor != null) return;
+        if (accessor != null)
+        {
+            return;
+        }
+
         accessor = _stationGameObject;
         accessor.transform.position = storedTransferPosition;
         accessor.GetComponent<SpriteRenderer>().sprite = _icon;
-        
     }
+
     #endregion
 }
 
 public class CameraData
 {
     #region FIELDS
+
     private Camera camera;
     private bool debugMode;
     private float sizeStart;
@@ -123,98 +144,150 @@ public class CameraData
     private float maxRight;
     private float maxBottom;
     private float currentPercent;
+
     #endregion
 
     #region PROPERTIES
-    /// <summary>
-    /// The actual Camera object.
-    /// </summary>
-    public Camera Accessor { get { return camera; } }
 
     /// <summary>
-    /// Whether or not the camera is currently in debug mode.
+    ///     The actual Camera object.
     /// </summary>
-    public bool DebugMode { get { return debugMode; } }
+    public Camera Accessor
+    {
+        get { return camera; }
+    }
 
     /// <summary>
-    /// The current x position of the Camera.
+    ///     Whether or not the camera is currently in debug mode.
     /// </summary>
-    public float PositionX { get { return camera.transform.position.x; } }
+    public bool DebugMode
+    {
+        get { return debugMode; }
+    }
 
     /// <summary>
-    /// The current y position of the Camera.
+    ///     The current x position of the Camera.
     /// </summary>
-    public float PositionY { get { return camera.transform.position.y; } }
+    public float PositionX
+    {
+        get { return camera.transform.position.x; }
+    }
 
     /// <summary>
-    /// The current width of the Camera's view.
+    ///     The current y position of the Camera.
     /// </summary>
-    public float Width { get { return width; } }
+    public float PositionY
+    {
+        get { return camera.transform.position.y; }
+    }
 
     /// <summary>
-    /// The current height of the Camera's view.
+    ///     The current width of the Camera's view.
     /// </summary>
-    public float Height { get { return height; } }
+    public float Width
+    {
+        get { return width; }
+    }
 
     /// <summary>
-    /// The current position in the scene of the Camera's left edge.
+    ///     The current height of the Camera's view.
     /// </summary>
-    public float Left { get { return left; } }
+    public float Height
+    {
+        get { return height; }
+    }
 
     /// <summary>
-    /// The current position in the scene of the Camera's top edge.
+    ///     The current position in the scene of the Camera's left edge.
     /// </summary>
-    public float Top { get { return top; } }
+    public float Left
+    {
+        get { return left; }
+    }
 
     /// <summary>
-    /// The current position in the scene of the Camera's right edge.
+    ///     The current position in the scene of the Camera's top edge.
     /// </summary>
-    public float Right { get { return right; } }
+    public float Top
+    {
+        get { return top; }
+    }
 
     /// <summary>
-    /// The current position in the scene of the Camera's bottom edge.
+    ///     The current position in the scene of the Camera's right edge.
     /// </summary>
-    public float Bottom { get { return bottom; } }
+    public float Right
+    {
+        get { return right; }
+    }
 
     /// <summary>
-    /// The maximum width of the Camera's view.
+    ///     The current position in the scene of the Camera's bottom edge.
     /// </summary>
-    public float MaxWidth { get { return maxWidth; } }
+    public float Bottom
+    {
+        get { return bottom; }
+    }
 
     /// <summary>
-    /// The maximum height of the Camera's view.
+    ///     The maximum width of the Camera's view.
     /// </summary>
-    public float MaxHeight { get { return maxHeight; } }
+    public float MaxWidth
+    {
+        get { return maxWidth; }
+    }
 
     /// <summary>
-    /// The maximum position in the scene of the Camera's left edge.
+    ///     The maximum height of the Camera's view.
     /// </summary>
-    public float MaxLeft { get { return maxLeft; } }
+    public float MaxHeight
+    {
+        get { return maxHeight; }
+    }
 
     /// <summary>
-    /// The maximum position in the scene of the Camera's top edge.
+    ///     The maximum position in the scene of the Camera's left edge.
     /// </summary>
-    public float MaxTop { get { return maxTop; } }
+    public float MaxLeft
+    {
+        get { return maxLeft; }
+    }
 
     /// <summary>
-    /// The maximum position in the scene of the Camera's right edge.
+    ///     The maximum position in the scene of the Camera's top edge.
     /// </summary>
-    public float MaxRight { get { return maxRight; } }
+    public float MaxTop
+    {
+        get { return maxTop; }
+    }
 
     /// <summary>
-    /// The maximum position in the scene of the Camera's bottom edge.
+    ///     The maximum position in the scene of the Camera's right edge.
     /// </summary>
-    public float MaxBottom { get { return maxBottom; } }
+    public float MaxRight
+    {
+        get { return maxRight; }
+    }
+
+    /// <summary>
+    ///     The maximum position in the scene of the Camera's bottom edge.
+    /// </summary>
+    public float MaxBottom
+    {
+        get { return maxBottom; }
+    }
+
     #endregion
 
     #region CONSTRUCTORS
+
     /// <summary>
-    /// Creates a storage system for the Camera along with allowing easier access to its information.
+    ///     Creates a storage system for the Camera along with allowing easier access to its information.
     /// </summary>
     /// <param name="_camera">The Camera object in the scene.</param>
     /// <param name="_sizeStart">The starting size to use for the Camera.</param>
     /// <param name="_sizeEnd">The maximum size that the Camera can reach.</param>
-    public CameraData (Camera _camera, float _sizeStart, float _sizeEnd)
+    public CameraData(Camera _camera, float _sizeStart, float _sizeEnd)
     {
         // STEP 1:
         // Insert data into generic fields.
@@ -233,20 +306,22 @@ public class CameraData
         maxTop = camera.transform.position.y + maxHeight * 0.5f;
         maxBottom = camera.transform.position.y - maxHeight * 0.5f;
     }
+
     #endregion
 
     #region METHODS
+
     /// <summary>
-    /// Changes the Camera's' dimensions using a percentage value between 0 and 1.
+    ///     Changes the Camera's' dimensions using a percentage value between 0 and 1.
     /// </summary>
     /// <param name="_size">The percentage for the new size for the Camera between its minimum and maximums.</param>
     public void UpdateCameraSize(float _percentSize)
     {
-        currentPercent = _percentSize;
+        currentPercent = _percentSize; // Corrected: Use _percentSize
         if (debugMode)
         {
             camera.orthographicSize = sizeEnd;
-            height = (sizeStart + (sizeEnd - sizeStart) * Mathf.Clamp(_percentSize, 0.0f, 1.0f)) * 2;
+            height = (sizeStart + (sizeEnd - sizeStart) * Mathf.Clamp(_percentSize, 0.0f, 1.0f)) * 2; // Corrected: Use _percentSize
             width = height * camera.aspect;
             left = camera.transform.position.x - width * 0.5f;
             right = camera.transform.position.x + width * 0.5f;
@@ -255,7 +330,7 @@ public class CameraData
         }
         else
         {
-            camera.orthographicSize = sizeStart + (sizeEnd - sizeStart) * Mathf.Clamp(_percentSize, 0.0f, 1.0f);
+            camera.orthographicSize = sizeStart + (sizeEnd - sizeStart) * Mathf.Clamp(_percentSize, 0.0f, 1.0f); // Corrected: Use _percentSize
             height = camera.orthographicSize * 2;
             width = height * camera.aspect;
             left = camera.transform.position.x - width * 0.5f;
@@ -266,146 +341,194 @@ public class CameraData
     }
 
     /// <summary>
-    /// Toggles on / off debug mode for the camera.
+    ///     Toggles on / off debug mode for the camera.
     /// </summary>
-    public void ToggleDebugMode ()
+    public void ToggleDebugMode()
     {
         debugMode = !debugMode;
         UpdateCameraSize(currentPercent);
     }
+
     #endregion
 }
 
 public class Timer
 {
     #region FIELDS
+
     private float time;
     private float length;
     private bool trigger;
     private bool runsOnce;
+
     #endregion
 
     #region PROPERTIES
+
     /// <summary>
-    /// Set to true when timer completes.
+    ///     Set to true when timer completes.
     /// </summary>
-    public bool Trigger { get { return trigger; } }
+    public bool Trigger
+    {
+        get { return trigger; }
+    }
+
     /// <summary>
-    /// Returns the percentage of time elpased until the camera is at its maximum size.
+    ///     Returns the percentage of time elpased until the camera is at its maximum size.
     /// </summary>
-    public float TimerPercentage { get { return time / length; } }
+    public float TimerPercentage
+    {
+        get { return time / length; }
+    }
+
     #endregion
 
     #region CONSTRUCTORS
+
     /// <summary>
-    /// Creates a timer that can be incremented, with a trigger to check when it is completed.
+    ///     Creates a timer that can be incremented, with a trigger to check when it is completed.
     /// </summary>
     /// <param name="_length">The length of the timer, tied to 'Time.deltaTime' (60 = 1 second).</param>
     /// <param name="_runsOnce"> If true, timer will not repeat</param>
-    public Timer (float _length, bool _runsOnce)
+    public Timer(float _length, bool _runsOnce)
     {
         runsOnce = _runsOnce;
         length = _length;
         time = 0.0f;
         trigger = false;
     }
+
     #endregion
 
     #region METHODS
+
     /// <summary>
-    /// Increments the timer. If Runsonce is true, the timer will stop incrementing after time > length.
+    ///     Increments the timer. If Runsonce is true, the timer will stop incrementing after time > length.
     /// </summary>
     /// <param name="_deltaTime"> Increments the timer. </param>
     public void IncrementTimer(float _deltaTime)
     {
         if (runsOnce)
         {
-            time = Mathf.Min(time+_deltaTime, length);
-            trigger = (time >= length);
+            time = Mathf.Min(time + _deltaTime, length);
+            trigger = time >= length;
         }
         else
         {
             time += _deltaTime;
-            trigger = (time >= length);
+            trigger = time >= length;
             if (trigger)
             {
                 time -= length;
             }
         }
-        
     }
+
     #endregion
 }
 
 public class StationGridReference
 {
     #region FIELDS
+
     private bool used;
     private Vector2 truePosition;
     private Vector2Int gridPosition;
     private Vector2Int removalPosition;
+
     #endregion
 
     #region PROPERTIES
-    /// <summary>
-    /// The x position in the scene.
-    /// </summary>
-    public float TruePositionX { get { return truePosition.x; } }
 
     /// <summary>
-    /// The y position in the scene.
+    ///     The x position in the scene.
     /// </summary>
-    public float TruePositionY { get { return truePosition.y; } }
+    public float TruePositionX
+    {
+        get { return truePosition.x; }
+    }
 
     /// <summary>
-    /// The x position in the 'trueGrid' of the StationGrid.
+    ///     The y position in the scene.
     /// </summary>
-    public int GridPositionX { get { return gridPosition.x; } }
+    public float TruePositionY
+    {
+        get { return truePosition.y; }
+    }
 
     /// <summary>
-    /// The y position in the 'trueGrid' of the StationGrid.
+    ///     The x position in the 'trueGrid' of the StationGrid.
     /// </summary>
-    public int GridPositionY { get { return gridPosition.y; } }
+    public int GridPositionX
+    {
+        get { return gridPosition.x; }
+    }
 
     /// <summary>
-    /// The x position in the 'removalList' of the StationGrid.
+    ///     The y position in the 'trueGrid' of the StationGrid.
     /// </summary>
-    public int RemovalPositionX { get { return removalPosition.x; } set { removalPosition.x = value; } }
+    public int GridPositionY
+    {
+        get { return gridPosition.y; }
+    }
 
     /// <summary>
-    /// The y position in the 'removalList' of the StationGrid.
+    ///     The x position in the 'removalList' of the StationGrid.
     /// </summary>
-    public int RemovalPositionY { get { return removalPosition.y; } set { removalPosition.y = value; } }
+    public int RemovalPositionX
+    {
+        get { return removalPosition.x; }
+        set { removalPosition.x = value; }
+    }
 
     /// <summary>
-    /// Whether or not this station slot can still be used.
+    ///     The y position in the 'removalList' of the StationGrid.
     /// </summary>
-    public bool Used { get { return used; } set { used = value; } }
+    public int RemovalPositionY
+    {
+        get { return removalPosition.y; }
+        set { removalPosition.y = value; }
+    }
+
+    /// <summary>
+    ///     Whether or not this station slot can still be used.
+    /// </summary>
+    public bool Used
+    {
+        get { return used; }
+        set { used = value; }
+    }
+
     #endregion
 
     #region CONSTRUCTORS
+
     /// <summary>
-    /// Creates an instance specifically to store information on where stations should be placed.
+    ///     Creates an instance specifically to store information on where stations should be placed.
     /// </summary>
     /// <param name="_position">The actual location this station should be placed at.</param>
     /// <param name="_truePosition">The position in the 'trueGrid'.</param>
     /// <param name="_removalPosition">The position in the 'removalGrid'.</param>
-    public StationGridReference (Vector2 _truePosition, Vector2Int _gridPosition, Vector2Int _removalPosition)
+    public StationGridReference(Vector2 _truePosition, Vector2Int _gridPosition, Vector2Int _removalPosition)
     {
         truePosition = _truePosition;
         gridPosition = _gridPosition;
         removalPosition = _removalPosition;
     }
+
     #endregion
 
     #region METHODS
+
     // Currently empty.
+
     #endregion
 }
 
 public class StationGrid
 {
     #region FIELDS
+
     private bool debugMode;
     private CameraData cameraData;
     private float distanceBetweenGridIndices;
@@ -421,37 +544,48 @@ public class StationGrid
     private int stationMaximumTotal;
     private List<Station> stations;
     private List<Station>[] shapeStations;
+
     #endregion
 
     #region PROPERTIES
-    /// <summary>
-    /// Whether or not the StationGrid is in debug mode for visualizing station spawning.
-    /// </summary>
-    public bool DebugMode { get { return debugMode; } }
 
     /// <summary>
-    /// Returns the dimensions of the 'trueGrid'.
+    ///     Whether or not the StationGrid is in debug mode for visualizing station spawning.
     /// </summary>
-    public Vector2Int TrueGridDimensions { get { return trueGridDimensions; } }
-
-    /// <summary>
-    /// Returns the number of currently existing stations.
-    /// </summary>
-    public int stationCount {  get { return stations.Count; } }
-
-    /// <summary>
-    /// The left edge of the current camera view where stations can spawn.
-    /// </summary>
-    public float StationSpawnLeft 
-    { 
-        get 
-        {
-            return cameraData.Left + cameraData.Width * (1.0f - stationPlacementScreenPercent) * 0.5f;
-        } 
+    public bool DebugMode
+    {
+        get { return debugMode; }
     }
 
     /// <summary>
-    /// The right edge of the current camera view where stations can spawn.
+    ///     Returns the dimensions of the 'trueGrid'.
+    /// </summary>
+    public Vector2Int TrueGridDimensions
+    {
+        get { return trueGridDimensions; }
+    }
+
+    /// <summary>
+    ///     Returns the number of currently existing stations.
+    /// </summary>
+    public int stationCount
+    {
+        get { return stations.Count; }
+    }
+
+    /// <summary>
+    ///     The left edge of the current camera view where stations can spawn.
+    /// </summary>
+    public float StationSpawnLeft
+    {
+        get
+        {
+            return cameraData.Left + cameraData.Width * (1.0f - stationPlacementScreenPercent) * 0.5f;
+        }
+    }
+
+    /// <summary>
+    ///     The right edge of the current camera view where stations can spawn.
     /// </summary>
     public float StationSpawnRight
     {
@@ -462,7 +596,7 @@ public class StationGrid
     }
 
     /// <summary>
-    /// The top edge of the current camera view where stations can spawn.
+    ///     The top edge of the current camera view where stations can spawn.
     /// </summary>
     public float StationSpawnTop
     {
@@ -473,7 +607,7 @@ public class StationGrid
     }
 
     /// <summary>
-    /// The bottom edge of the current camera view where stations can spawn.
+    ///     The bottom edge of the current camera view where stations can spawn.
     /// </summary>
     public float StationSpawnBottom
     {
@@ -482,11 +616,13 @@ public class StationGrid
             return cameraData.Bottom + cameraData.Height * (1.0f - stationPlacementScreenPercent) * 0.5f;
         }
     }
+
     #endregion
 
     #region CONSTRUCTORS
+
     /// <summary>
-    /// A submanager which handles stations and their placement within the current camera.
+    ///     A submanager which handles stations and their placement within the current camera.
     /// </summary>
     /// <param name="_cameraData">The camera information manager.</param>
     /// <param name="_distanceBetweenGridIndices">How much space in scene should be between each index in the grid.</param>
@@ -496,10 +632,10 @@ public class StationGrid
     /// <param name="_stationBoundaryRadius">The radius around a station to block other stations from spawning in.</param>
     /// <param name="_stationPrefab">The basic station prefab to pull from.</param>
     /// <param name="_stationSprites">Array of sprites for stations.</param>
-    public StationGrid (
-            CameraData _cameraData, float _distanceBetweenGridIndices, 
-            int _startingStationTotal, int _stationMaximumTotal,
-            float _stationPlacementScreenPercent, float _stationBoundaryRadius)
+    public StationGrid(
+        CameraData _cameraData, float _distanceBetweenGridIndices,
+        int _startingStationTotal, int _stationMaximumTotal,
+        float _stationPlacementScreenPercent, float _stationBoundaryRadius)
     {
         // STEP 1:
         // Insert data into generic fields.
@@ -511,39 +647,43 @@ public class StationGrid
         stationPlacementScreenPercent = _stationPlacementScreenPercent;
         stationBoundaryRadius = _stationBoundaryRadius;
         shapeStations = new List<Station>[(int)STATION_SHAPE.LENGTH];
-        for (int _i = 0; _i < shapeStations.Length; ++_i) shapeStations[_i] = new List<Station> ();
-        stations = new List<Station> ();
+        for (int _i = 0; _i < shapeStations.Length; ++_i)
+        {
+            shapeStations[_i] = new List<Station>();
+        }
+
+        stations = new List<Station>();
 
         // STEP 2:
         // Get the grid dimensions.
-        trueGridDimensions = new Vector2Int (
-                (int)(cameraData.MaxWidth * _stationPlacementScreenPercent / distanceBetweenGridIndices),
-                (int)(cameraData.MaxHeight * _stationPlacementScreenPercent / distanceBetweenGridIndices));
+        trueGridDimensions = new Vector2Int(
+            (int)(cameraData.MaxWidth * _stationPlacementScreenPercent / distanceBetweenGridIndices),
+            (int)(cameraData.MaxHeight * _stationPlacementScreenPercent / distanceBetweenGridIndices));
 
         // STEP 3:
         // Create the two grids the fill them piecemail.
         trueGrid = new StationGridReference[trueGridDimensions.x, trueGridDimensions.y];
-        removalGrid = new List<List<StationGridReference>> ();
+        removalGrid = new List<List<StationGridReference>>();
         for (int _x = 0; _x < trueGridDimensions.x; ++_x)
         {
             // Add slot to 'removalGrid'
-            removalGrid.Add(new List<StationGridReference> ());
+            removalGrid.Add(new List<StationGridReference>());
 
             for (int _y = 0; _y < trueGridDimensions.y; ++_y)
             {
                 // Create StationGridReference
-                StationGridReference _station = new StationGridReference (
-                        new Vector2 (
-                            cameraData.MaxLeft
-                            + cameraData.MaxWidth * (1.0f - stationPlacementScreenPercent) * 0.5f
-                            + cameraData.MaxWidth * _stationPlacementScreenPercent
-                            * ((_x + 0.5f) / (float)(trueGridDimensions.x)),
-                            cameraData.MaxBottom
-                            + cameraData.MaxHeight * (1.0f - stationPlacementScreenPercent) * 0.5f
-                            + cameraData.MaxHeight * _stationPlacementScreenPercent
-                            * ((_y + 0.5f) / (float)(trueGridDimensions.y))),
-                        new Vector2Int (_x, _y),
-                        new Vector2Int (0, 0)); // Fixes itself whenever GridRemoveUsed() runs.
+                StationGridReference _station = new StationGridReference(
+                    new Vector2(
+                        cameraData.MaxLeft
+                        + cameraData.MaxWidth * (1.0f - stationPlacementScreenPercent) * 0.5f
+                        + cameraData.MaxWidth * _stationPlacementScreenPercent
+                        * ((_x + 0.5f) / (float)(trueGridDimensions.x)),
+                        cameraData.MaxBottom
+                        + cameraData.MaxHeight * (1.0f - stationPlacementScreenPercent) * 0.5f
+                        + cameraData.MaxHeight * _stationPlacementScreenPercent
+                        * ((_y + 0.5f) / (float)(trueGridDimensions.y))),
+                    new Vector2Int(_x, _y),
+                    new Vector2Int(0, 0)); // Fixes itself whenever GridRemoveUsed() runs.
 
                 // Assign to 'trueGrid'.
                 trueGrid[_x, _y] = _station;
@@ -560,21 +700,26 @@ public class StationGrid
         // Remove all used slots & update positions.
         GridRemoveUsed();
     }
+
     #endregion
 
     #region METHODS
+
     /// <summary>
-    /// Returns a StationGridReference at a given position in the 'trueGrid'.
+    ///     Returns a StationGridReference at a given position in the 'trueGrid'.
     /// </summary>
     /// <param name="_x">X position in true grid to pull from.</param>
     /// <param name="_y">Y position in true grid to pull from.</param>
     /// <returns></returns>
-    public StationGridReference GetStationGridReference (int _x, int _y) { return trueGrid[_x, _y]; }
+    public StationGridReference GetStationGridReference(int _x, int _y)
+    {
+        return trueGrid[_x, _y];
+    }
 
     /// <summary>
-    /// Removes used indices and updates positions on those after.
+    ///     Removes used indices and updates positions on those after.
     /// </summary>
-    private void GridRemoveUsed ()
+    private void GridRemoveUsed()
     {
         for (int _x = 0; _x < removalGrid.Count; ++_x)
         {
@@ -590,7 +735,7 @@ public class StationGrid
                 {
                     // Update its position
                     removalGrid[_x][_y].RemovalPositionX = _x;
-                    removalGrid[_x][_y].RemovalPositionX = _y;
+                    removalGrid[_x][_y].RemovalPositionY = _y;
                 }
             }
 
@@ -601,15 +746,18 @@ public class StationGrid
             }
         }
     }
-    
+
     /// <summary>
-    /// Creates a station and places it somewhere on the currently visible screen.
+    ///     Creates a station and places it somewhere on the currently visible screen.
     /// </summary>
-    public Station CreateStation ()
+    public Station CreateStation()
     {
         // STEP 1:
         // Make sure a station can still be added.
-        if (removalGrid.Count == 0 || stations.Count == stationMaximumTotal) return null;
+        if (removalGrid.Count == 0 || stations.Count == stationMaximumTotal)
+        {
+            return null;
+        }
 
         // STEP 2:
         // Get all slots that are within current camera view.
@@ -634,14 +782,17 @@ public class StationGrid
 
         // STEP 3:
         // If none are available cancel here.
-        if (_available.Count == 0) return null;
+        if (_available.Count == 0)
+        {
+            return null;
+        }
 
         // STEP 4:
         // Pick and create random station.
         StationGridReference _station = _available[Random.Range(0, _available.Count)];
         _station.Used = true;
         int _stationShape = Random.Range(0, (int)STATION_SHAPE.LENGTH);
-        Station _stationObject = new Station (new Vector2(_station.TruePositionX, _station.TruePositionY), _stationShape);
+        Station _stationObject = new Station(new Vector2(_station.TruePositionX, _station.TruePositionY), _stationShape);
         stations.Add(_stationObject);
         shapeStations[_stationShape].Add(_stationObject);
 
@@ -663,6 +814,7 @@ public class StationGrid
                 break;
             }
         }
+
         int _bottomIndex = -1;
         int _topIndex = trueGridDimensions.y;
         for (int _y = 0; _y < trueGridDimensions.y; ++_y)
@@ -696,7 +848,7 @@ public class StationGrid
                 }
             }
         }
-        
+
         // STEP 7:
         // Remove all used slots.
         GridRemoveUsed();
@@ -707,137 +859,273 @@ public class StationGrid
     }
 
     /// <summary>
-    /// Returns an existing Station class instance.
+    ///     Returns an existing Station class instance.
     /// </summary>
     /// <param name="_index">The index of the Station to be returned.</param>
     /// <returns></returns>
-    public Station GetStation(int _index) { return stations[_index]; }
+    public Station GetStation(int _index)
+    {
+        return stations[_index];
+    }
 
     /// <summary>
-    /// Toggles on / off debug mode for the StationGrid.
+    ///     Toggles on / off debug mode for the StationGrid.
     /// </summary>
-    public void ToggleDebugMode ()
+    public void ToggleDebugMode()
     {
         debugMode = !debugMode;
     }
-    #endregion
 
+    #endregion
 }
 
 public class Manager : MonoBehaviour
 {
-    #region FIELDS
-    // Serialized Elements
-    [SerializeField] GameObject stationPrefab;
-    [SerializeField] Sprite[] stationSprites = new Sprite[(int)STATION_SHAPE.LENGTH];
+    #region Static Instance
 
-    [SerializeField] int startingStationTotal = 2;
-    [SerializeField] int stationMaximumTotal = 10;
+    public static Manager Instance { get; private set; }
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Debug.LogError("Multiple Manager instances found!");
+            Destroy(gameObject);
+        }
+    }
+
+    #endregion
+
+    #region FIELDS
+
+    // Serialized Elements
+    [SerializeField]
+    private GameObject stationPrefab;
+
+    [SerializeField]
+    private Sprite[] stationSprites = new Sprite[(int)STATION_SHAPE.LENGTH];
+
+    [SerializeField]
+    private int startingStationTotal = 2;
+
+    [SerializeField]
+    private int stationMaximumTotal = 10;
 
     // Key element storage systems
-    List<Timer> timers;
-    CameraData cameraData;
-    StationGrid stationGrid;
+    private List<Timer> timers;
+    private CameraData cameraData;
+    private StationGrid stationGrid;
 
-    bool isGameRunning = false;
+    private bool isGameRunning = false;
+    public bool isGamePaused = false; // Add this to track pause state
 
     //Camera Zoom Out
-    [SerializeField] float maxCameraTime = 600f;
-    Timer cameraZoomOutTime;
+    [SerializeField]
+    private float maxCameraTime = 600f;
+
+    private Timer cameraZoomOutTime;
 
     //Station Spawning
-    [SerializeField] float timeBetweenStationSpawns = 15f;
-    Timer stationSpawnTimer;
+    [SerializeField]
+    private float timeBetweenStationSpawns = 15f;
+
+    private Timer stationSpawnTimer;
+
+    // Train Resources
+    public int availableTrains = 3; // Example starting value
 
     #endregion
 
     #region UNITY MONOBEHAVIOR
+
     // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start ()
+    private void Start()
     {
         // STEP 1:
         // Insert data into generic fields.
         isGameRunning = true;
-        cameraData = new CameraData (Camera.main, 5.0f, 10.0f);
+        isGamePaused = false; // Initialize pause state
+        cameraData = new CameraData(Camera.main, 5.0f, 10.0f);
         //cameraData.ToggleDebugMode();
-        timers = new List<Timer> ();
-        stationGrid = new StationGrid (cameraData, 1.0f, startingStationTotal, stationMaximumTotal, 0.9f, 3.0f);
+        timers = new List<Timer>();
+        stationGrid = new StationGrid(cameraData, 1.0f, startingStationTotal, stationMaximumTotal, 0.9f, 3.0f);
         stationGrid.ToggleDebugMode();
 
         // STEP 2:
         // Create starting stations.
-        for (int _i = 0; _i < startingStationTotal; ++_i) { CreateStation(); }
+        for (int _i = 0; _i < startingStationTotal; ++_i)
+        {
+            CreateStation();
+        }
 
         // STEP 3:
         // Set variables for camera size change  and station spawning.
         cameraZoomOutTime = CreateTimer(maxCameraTime, true);
         stationSpawnTimer = CreateTimer(timeBetweenStationSpawns, false);
-
     }
 
     // Update is called once per frame
-    void Update()
+    private void Update()
     {
-        // STEP 1:
-        // Increment all existing Timer class instances.
-        foreach (Timer timer in timers) timer.IncrementTimer(Time.deltaTime);
-
-        // STEP 2:
-        // TODO - Camera scaling and spawing of stations over time.
-        cameraData.UpdateCameraSize(cameraZoomOutTime.TimerPercentage);
-        if (stationSpawnTimer.Trigger)
+        if (!isGamePaused) // Only update game elements if not paused
         {
-            CreateStation();
+            // STEP 1:
+            // Increment all existing Timer class instances.
+            foreach (Timer timer in timers)
+            {
+                timer.IncrementTimer(Time.deltaTime);
+            }
+
+            // STEP 2:
+            // TODO - Camera scaling and spawing of stations over time.
+            cameraData.UpdateCameraSize(cameraZoomOutTime.TimerPercentage);
+            if (stationSpawnTimer.Trigger)
+            {
+                CreateStation();
+            }
         }
     }
+
     #endregion
 
     #region METHODS
+
     /// <summary>
-    /// Creates a station and instantiates its associated object in the scene.
+    ///     Creates a station and instantiates its associated object in the scene.
     /// </summary>
     private void CreateStation()
     {
         Station _station = stationGrid.CreateStation();
-        if (_station != null) _station.InjectStationObject(
+        if (_station != null)
+        {
+            _station.InjectStationObject(
                 Instantiate(stationPrefab, Vector3.zero, Quaternion.identity),
                 stationSprites[(int)_station.Shape]);
+        }
     }
 
     /// <summary>
-    /// Creates a new Timer and adds it to the timers list
+    ///     Creates a new Timer and adds it to the timers list
     /// </summary>
     /// <param name="_length"> Length of the timer. </param>
     /// <param name="_runsOnce"> Whether or not the timer will run once or will loop. </param>
     /// <returns> Returns the newly created Timer. </returns>
     private Timer CreateTimer(float _length, bool _runsOnce)
     {
-        Timer _timer = new Timer (_length, _runsOnce);
+        Timer _timer = new Timer(_length, _runsOnce);
         timers.Add(_timer);
         return _timer;
     }
 
-    // Gizmos
-    private void OnDrawGizmos ()
+    // Methods to control game state from UI
+    public void PauseGame()
     {
-        if (!isGameRunning) return;
+        isGamePaused = true;
+        Time.timeScale = 0f; // Stop time for game elements
+        Debug.Log("Game Paused");
+    }
+
+    public void ResumeGame()
+    {
+        isGamePaused = false;
+        Time.timeScale = 1f; // Resume normal time
+        Debug.Log("Game Resumed");
+    }
+
+    public void ExitGame()
+    {
+                Debug.Log("Exiting Game...");
+        #if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+        #else
+                Application.Quit();
+        #endif
+    }
+
+    public void SelectColor(int colorIndex)
+    {
+        Debug.Log("Selected color index: " + colorIndex);
+        // Implement logic for selecting this color for line drawing
+    }
+
+    public void SelectTunnel()
+    {
+        Debug.Log("Selected Tunnel");
+        // Implement logic for selecting the tunnel tool
+    }
+
+    public void SelectTrain()
+    {
+        Debug.Log("Selected Train");
+        // Implement logic for selecting the train tool
+    }
+
+    /// <summary>
+    ///     Sets the game speed.
+    /// </summary>
+    /// <param name="speed">The speed multiplier (1f = normal, 2f = double speed, etc.).</param>
+    public void SetGameSpeed(float speed)
+    {
+        Time.timeScale = speed;
+        Debug.Log("Game speed set to: " + speed);
+    }
+
+    // Method to get available train count
+    public int GetAvailableTrains()
+    {
+        return availableTrains;
+    }
+
+    // Method to reduce available train count
+    public void UseTrain()
+    {
+        availableTrains--;
+        if (availableTrains < 0)
+        {
+            availableTrains = 0; // Prevent going below zero
+        }
+
+        Debug.Log("Train used. Available trains: " + availableTrains);
+    }
+
+    // Method to increase available train count (if needed)
+    public void AddTrain(int amount)
+    {
+        availableTrains += amount;
+        Debug.Log("Trains added. Available trains: " + availableTrains);
+    }
+    #endregion
+
+    #region GIZMOS
+
+    // Gizmos
+    private void OnDrawGizmos()
+    {
+        if (!isGameRunning)
+        {
+            return;
+        }
 
         // Show camera size.
         if (cameraData.DebugMode)
         {
             Gizmos.color = Color.white;
-            Gizmos.DrawLine (
-                    new Vector3 (cameraData.Left, cameraData.Top, 0),
-                    new Vector3 (cameraData.Left, cameraData.Bottom, 0));
-            Gizmos.DrawLine (
-                    new Vector3 (cameraData.Right, cameraData.Top, 0),
-                    new Vector3 (cameraData.Right, cameraData.Bottom, 0));
-            Gizmos.DrawLine (
-                    new Vector3 (cameraData.Left, cameraData.Top, 0),
-                    new Vector3 (cameraData.Right, cameraData.Top, 0));
-            Gizmos.DrawLine (
-                    new Vector3 (cameraData.Left, cameraData.Bottom, 0),
-                    new Vector3 (cameraData.Right, cameraData.Bottom, 0));
+            Gizmos.DrawLine(
+                new Vector3(cameraData.Left, cameraData.Top, 0),
+                new Vector3(cameraData.Left, cameraData.Bottom, 0));
+            Gizmos.DrawLine(
+                new Vector3(cameraData.Right, cameraData.Top, 0),
+                new Vector3(cameraData.Right, cameraData.Bottom, 0));
+            Gizmos.DrawLine(
+                new Vector3(cameraData.Left, cameraData.Top, 0),
+                new Vector3(cameraData.Right, cameraData.Top, 0));
+            Gizmos.DrawLine(
+                new Vector3(cameraData.Left, cameraData.Bottom, 0),
+                new Vector3(cameraData.Right, cameraData.Bottom, 0));
         }
 
         if (stationGrid.DebugMode)
@@ -845,17 +1133,17 @@ public class Manager : MonoBehaviour
             // Draw spawning screen space
             Gizmos.color = Color.yellow;
             Gizmos.DrawLine(
-                    new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnTop, 0),
-                    new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnBottom, 0));
+                new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnTop, 0),
+                new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnBottom, 0));
             Gizmos.DrawLine(
-                    new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnTop, 0),
-                    new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnBottom, 0));
+                new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnTop, 0),
+                new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnBottom, 0));
             Gizmos.DrawLine(
-                    new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnTop, 0),
-                    new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnTop, 0));
+                new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnTop, 0),
+                new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnTop, 0));
             Gizmos.DrawLine(
-                    new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnBottom, 0),
-                    new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnBottom, 0));
+                new Vector3(stationGrid.StationSpawnLeft, stationGrid.StationSpawnBottom, 0),
+                new Vector3(stationGrid.StationSpawnRight, stationGrid.StationSpawnBottom, 0));
 
             // Show station spawn positions.
             for (int _x = 0; _x < stationGrid.TrueGridDimensions.x; ++_x)
@@ -883,13 +1171,14 @@ public class Manager : MonoBehaviour
                     }
 
                     Gizmos.DrawSphere(new Vector3(
-                            stationGrid.GetStationGridReference(_x, _y).TruePositionX,
-                            stationGrid.GetStationGridReference(_x, _y).TruePositionY,
-                            0), 0.15f);
+                                             stationGrid.GetStationGridReference(_x, _y).TruePositionX,
+                                             stationGrid.GetStationGridReference(_x, _y).TruePositionY,
+                                             0), 0.15f);
                 }
             }
         }
-    }
 
-    #endregion
+        #endregion
+
+    }
 }
