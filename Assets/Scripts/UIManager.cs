@@ -134,6 +134,15 @@ public class UIManager : MonoBehaviour
             gameManager.PauseGame();
             gameManager.SetGameSpeed(1f); // Ensure normal speed when paused
         }
+        if(gameManager.isGamePaused){
+            Color newColor = new Color32(80,80,80,255);
+
+            ColorBlock newColorBlock = pauseDropdownButton.colors;
+            newColorBlock.normalColor = newColor;
+            newColorBlock.selectedColor = newColor;
+            pauseDropdownButton.colors = newColorBlock;
+        }
+
     }
 
     void ResumeGame()
@@ -143,6 +152,15 @@ public class UIManager : MonoBehaviour
             gameManager.ResumeGame();
             gameManager.SetGameSpeed(1f); // Ensure normal speed when resuming
         }
+
+        if(!gameManager.isGamePaused){
+            ColorBlock newColorBlock = pauseDropdownButton.colors;
+            newColorBlock.normalColor = Color.white;
+            newColorBlock.selectedColor = Color.white;
+            pauseDropdownButton.colors = newColorBlock;
+        }
+
+
     }
 
     void FastForwardGame()
