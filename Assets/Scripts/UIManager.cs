@@ -24,14 +24,14 @@ public class UIManager : MonoBehaviour
     public TextMeshProUGUI trainCounterText_TMP; // Or Text if not using TMP
     public Button tunnelButton;
 
-    private Manager gameManager;
+    private MainManager gameManager;
     private float normalButtonScale = 1f;
     public float hoverScaleFactor = 1.1f;
     private Color normalClockColor;
 
     void Start()
     {
-        gameManager = Object.FindFirstObjectByType<Manager>();
+        gameManager = Object.FindFirstObjectByType<MainManager>();
         if (gameManager == null)
         {
             Debug.LogError("UIManager could not find the GameManager!");
