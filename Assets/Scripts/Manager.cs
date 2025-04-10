@@ -328,6 +328,8 @@ public class Station
     private GameObject accessor;
     private STATION_SHAPE shape;
     private Vector2 position;
+    private Point[,] pointConnections;
+    private Vector2[,] accessConnections; 
 
     #endregion
 
@@ -388,7 +390,18 @@ public class Station
     {
         position = _position;
         shape = (STATION_SHAPE)_shape;
- 
+
+        pointConnections = new Point[8, 3];
+        accessConnections = new Vector2[8, 3];
+
+        float length = 1.0f;
+        for (int _i = 0; _i < pointConnections.Count; ++_i)
+        {
+            accessConnections[ _i, 1 ] = new Vector ( position.x + length * Mathf. )
+        }
+
+
+
     }
 
     #endregion
