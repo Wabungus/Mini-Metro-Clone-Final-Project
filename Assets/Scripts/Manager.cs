@@ -397,7 +397,9 @@ public class Station
         float length = 1.0f;
         for (int _i = 0; _i < pointConnections.Count; ++_i)
         {
-            accessConnections[ _i, 1 ] = new Vector ( position.x + length * Mathf. )
+            accessConnections[_i, 1] = new Vector2(position.x + length * Mathf.Cos((Mathf.PI / 2) * _i), position.y + length * Mathf.Sign((Mathf.PI / 2) * _i) );
+            accessConnections[_i, 1] = new Vector2(position.x + length * Mathf.Cos((Mathf.PI / 2) * _i), position.y + length * Mathf.Sign((Mathf.PI / 2) * _i));
+
         }
 
 
