@@ -15,114 +15,7 @@ public enum STATION_SHAPE
     LENGTH // Used for math, not a station shape.
 }
 
-public class Station
-{
-    #region Fields
-
-    private GameObject accessor;
-    private Rect clickCollider;
-    private STATION_SHAPE shape;
-    private Vector2 storedTransferPosition;
-
-    #endregion
-
-    #region PROPERTIES
-
-    /// <summary>
-    ///     A reference to this station's GameObject.
-    /// </summary>
-    public GameObject Accessor
-    {
-        get { return accessor; }
-    }
-
-    /// <summary>
-    ///     The shape type of this station.
-    /// </summary>
-    public STATION_SHAPE Shape
-    {
-        get { return shape; }
-    }
-
-    /// <summary>
-    ///     The x position in the scene of the station GameObject.
-    /// </summary>
-    public float PositionX
-    {
-        get { return accessor.transform.position.x; }
-        set { accessor.transform.position.Set(value, accessor.transform.position.y, 0); }
-    }
-
-    /// <summary>
-    ///     The y position in the scene of the station GameObject.
-    /// </summary>
-    public float PositionY
-    {
-        get { return accessor.transform.position.y; }
-        set { accessor.transform.position.Set(accessor.transform.position.x, value, 0); }
-    }
-
-    /// <summary>
-    ///     The x & y scale of the station GameObject (effects SpriteRenderer).
-    /// </summary>
-    public float Scale
-    {
-        get { return accessor.transform.localScale.x; }
-        set { accessor.transform.localScale.Set(value, value, 1); }
-    }
-
-    /// <summary>
-    ///     The collider within which you can click on this station.
-    /// </summary>
-    public Rect ClickCollider
-    {
-        get { return clickCollider; }
-    }
-
-    #endregion
-
-    #region CONSTRUCTORS
-
-    /// <summary>
-    ///     Creates a Station class instance, containing shortcuts to its associated station GameObject.
-    /// </summary>
-    /// <param name="_storedTransferPosition">Where to place the station object once it is created.</param>
-    /// <param name="_shape">The shape for this station, converts to enum format internally.</param>
-    /// <param name="_icon">The Sprite to apply to the station GameObject.</param>
-    public Station(Vector2 _storedTransferPosition, int _shape)
-    {
-        storedTransferPosition = _storedTransferPosition;
-        shape = (STATION_SHAPE)_shape;
-        clickCollider = new Rect(
-            storedTransferPosition.x - 0.2f,
-            storedTransferPosition.y - 0.2f,
-            0.4f, 0.4f);
-    }
-
-    #endregion
-
-    #region Methods
-
-    /// <summary>
-    ///     Injects the action GameObject of the station in since it can only be created in the main class.
-    /// </summary>
-    /// <param name="_stationGameObject">Station GameObject to inject</param>
-    /// <param name="_icon">The sprite to use for this game object</param>
-    public void InjectStationObject(GameObject _stationGameObject, Sprite _icon)
-    {
-        if (accessor != null)
-        {
-            return;
-        }
-
-        accessor = _stationGameObject;
-        accessor.transform.position = storedTransferPosition;
-        accessor.GetComponent<SpriteRenderer>().sprite = _icon;
-    }
-
-    #endregion
-}
-
+#region Basic Classes
 public class CameraData
 {
     #region FIELDS
@@ -426,7 +319,122 @@ public class Timer
 
     #endregion
 }
+#endregion
 
+public class Station
+{
+    #region Fields
+
+    private GameObject accessor;
+    private STATION_SHAPE shape;
+    private Vector2 position;
+
+    #endregion
+
+    #region PROPERTIES
+
+    /// <summary>
+    ///     A reference to this station's GameObject.
+    /// </summary>
+    public GameObject Accessor
+    {
+        get { return accessor; }
+    }
+
+    /// <summary>
+    ///     The shape type of this station.
+    /// </summary>
+    public STATION_SHAPE Shape
+    {
+        get { return shape; }
+    }
+
+    /// <summary>
+    ///     The x position in the scene of the station GameObject.
+    /// </summary>
+    public float X
+    {
+        get { return position.x; }
+    }
+
+    /// <summary>
+    ///     The y position in the scene of the station GameObject.
+    /// </summary>
+    public float Y
+    {
+        get { return position.y; }
+    }
+
+    /// <summary>
+    ///     The x & y scale of the station GameObject (effects SpriteRenderer).
+    /// </summary>
+    public float Scale
+    {
+        get { return accessor.transform.localScale.x; }
+        set { accessor.transform.localScale.Set(value, value, 1); }
+    }
+
+    #endregion
+
+    #region CONSTRUCTORS
+
+    /// <summary>
+    ///     Creates a Station class instance, containing shortcuts to its associated station GameObject.
+    /// </summary>
+    /// <param name="_position">Where to place the station object once it is created.</param>
+    /// <param name="_shape">The shape for this station, converts to enum format internally.</param>
+    /// <param name="_icon">The Sprite to apply to the station GameObject.</param>
+    public Station(Vector2 _position, int _shape)
+    {
+        position = _position;
+        shape = (STATION_SHAPE)_shape;
+ 
+    }
+
+    #endregion
+
+    #region Methods
+
+    /// <summary>
+    ///     Injects the action GameObject of the station in since it can only be created in the main class.
+    /// </summary>
+    /// <param name="_stationGameObject">Station GameObject to inject</param>
+    /// <param name="_icon">The sprite to use for this game object</param>
+    public void InjectStationObject(GameObject _stationGameObject, Sprite _icon)
+    {
+        if (accessor != null)
+        {
+            return;
+        }
+
+        accessor = _stationGameObject;
+        accessor.transform.position = position;
+        accessor.GetComponent<SpriteRenderer>().sprite = _icon;
+    }
+
+    #endregion
+}
+
+public class Point
+{
+    #region FIELDS
+
+
+
+    #endregion
+
+    #region PROPERTIES
+    #endregion
+
+    #region CONSTRUCTOS
+
+    #endregion
+
+    #region METHODS
+    #endregion
+}
+
+#region Station Spawning
 public class StationGridReference
 {
     #region FIELDS
@@ -878,6 +886,7 @@ public class StationGrid
 
     #endregion
 }
+#endregion
 
 public class Manager : MonoBehaviour
 {
