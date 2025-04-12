@@ -2641,6 +2641,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   stationPrefab: {fileID: 187481007235670479, guid: e51843e15e3cb0345bf66a356b79b491, type: 3}
+  lineRendererPrefab: {fileID: 4903538606693582475, guid: 386fc07838854144b81280c7ceebaef9, type: 3}
   stationSprites:
   - {fileID: 21300000, guid: b27b8197b864e4b459166edd3ffe9192, type: 3}
   - {fileID: 21300000, guid: b27b8197b864e4b459166edd3ffe9192, type: 3}
@@ -2648,11 +2649,11 @@ MonoBehaviour:
   - {fileID: 21300000, guid: b27b8197b864e4b459166edd3ffe9192, type: 3}
   - {fileID: 21300000, guid: b27b8197b864e4b459166edd3ffe9192, type: 3}
   - {fileID: 21300000, guid: b27b8197b864e4b459166edd3ffe9192, type: 3}
+  maxCameraTime: 60
   startingStationTotal: 2
   stationMaximumTotal: 10
-  isGamePaused: 0
-  maxCameraTime: 60
   timeBetweenStationSpawns: 15
+  isGamePaused: 0
   availableTrains: 3
 --- !u!4 &2019560455
 Transform:

@@ -1,5 +1,8 @@
 using System.Collections.Generic;
+using TMPro.SpriteAssetUtilities;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 /// <summary>
 ///     Every station shape variant present.
@@ -41,6 +44,18 @@ public class CameraData
     #endregion
 
     #region PROPERTIES
+    /// <summary>
+    ///     Whether or not the camera is currently in debug mode.
+    /// </summary>
+    public bool DebugMode
+    {
+        get { return debugMode; }
+        set
+        {
+            debugMode = value;
+            UpdateCameraSize(currentPercent);
+        }
+    }
 
     /// <summary>
     ///     The actual Camera object.
@@ -48,14 +63,6 @@ public class CameraData
     public Camera Accessor
     {
         get { return camera; }
-    }
-
-    /// <summary>
-    ///     Whether or not the camera is currently in debug mode.
-    /// </summary>
-    public bool DebugMode
-    {
-        get { return debugMode; }
     }
 
     /// <summary>
@@ -169,7 +176,6 @@ public class CameraData
     {
         get { return maxBottom; }
     }
-
     #endregion
 
     #region CONSTRUCTORS
@@ -233,14 +239,7 @@ public class CameraData
         }
     }
 
-    /// <summary>
-    ///     Toggles on / off debug mode for the camera.
-    /// </summary>
-    public void ToggleDebugMode()
-    {
-        debugMode = !debugMode;
-        UpdateCameraSize(currentPercent);
-    }
+    
 
     #endregion
 }
@@ -319,22 +318,126 @@ public class Timer
 
     #endregion
 }
+
+public class MouseData
+{
+    #region FIELDS
+    private Vector2 position;
+    private bool leftPressed;
+    private bool leftReleased;
+    #endregion
+
+    #region PARAMETERS
+    public float X { get { return position.x; } }
+    public float Y { get { return position.y; } }
+    public Vector2 Position { get { return position; } }
+    public bool LeftPressed { get { return leftPressed; } }
+    public bool LeftReleased { get { return leftReleased; } }
+    #endregion
+
+    #region CONSTRUCTORS
+    public MouseData ()
+    {
+        position = Vector2.zero;
+        leftPressed = false;
+        leftReleased = false;
+    }
+    #endregion
+
+    #region METHODS
+    public void SetData ()
+    {
+        // Handle Mouse Position
+        position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        // Buttons pressed.
+        if (leftPressed) leftPressed = false;
+        if (leftReleased) leftReleased = false;
+        if (Input.GetMouseButtonDown(0)) leftPressed = true;
+        if (Input.GetMouseButtonUp(0)) leftReleased = true;
+    }
+    #endregion
+}
 #endregion
 
-public class Station
+public class RectCollider
 {
-    #region Fields
-
-    private GameObject accessor;
-    private STATION_SHAPE shape;
-    private Vector2 position;
-    private Point[,] pointConnections;
-    private Vector2[,] accessConnections; 
-
+    #region FIELDS
+    private float left;
+    private float right;
+    private float top;
+    private float bottom;
+    Vector2 topLeft;
+    Vector2 bottomRight;
     #endregion
 
     #region PROPERTIES
+    /// <summary>
+    /// The left x position of the collider
+    /// </summary>
+    public float Left { get { return left; } }
+    /// <summary>
+    /// The right x position of the collider
+    /// </summary>
+    public float Right { get { return right; } }
+    /// <summary>
+    /// The top y position of the collider
+    /// </summary>
+    public float Top { get { return top; } }
+    /// <summary>
+    /// The bottom y position of the collider
+    /// </summary>
+    public float Bottom { get { return bottom; } }
+    public Vector2 TopLeft { get { return topLeft; } }
+    public Vector2 BottomRight { get { return bottomRight; } }
+    #endregion
 
+    #region CONSTRUCTOR
+    public RectCollider(float _left, float _right, float _top, float _bottom)
+    {
+        left = _left;
+        right = _right;
+        top = _top;
+        bottom = _bottom;
+        topLeft = new Vector2(_left, _top);
+        bottomRight = new Vector2(_right, _bottom);
+    }
+    #endregion
+
+    #region METHODS
+    public bool PositionInCollider(Vector2 _position)
+    {
+        return (_position.x >= left && _position.x <= right && _position.y >= bottom && _position.y <= top);
+    }
+    #endregion
+}
+
+public class Station
+{
+    #region FIELDS
+    private bool debugMode;
+    private GameObject accessor;
+    private STATION_SHAPE shape;
+    private Vector2 position;
+
+    private Point[,] pointConnections;
+    private Vector2[,] accessConnections;
+    private List<Point> totalPoints;
+
+    private RectCollider collider;
+    #endregion
+
+    #region PROPERTIES
+    /// <summary>
+    /// Enables debug viewing for this station.
+    /// </summary>
+    public bool DebugMode { get { return debugMode; } set { debugMode = value; } }
+    /// <summary>
+    /// Allows direct access to the positions used for placing points.
+    /// </summary>
+    public Vector2[,] AccessConnections { get { return accessConnections; } }
+
+    #region OBJECT DATA
     /// <summary>
     ///     A reference to this station's GameObject.
     /// </summary>
@@ -352,20 +455,9 @@ public class Station
     }
 
     /// <summary>
-    ///     The x position in the scene of the station GameObject.
+    ///     The position of this station object.
     /// </summary>
-    public float X
-    {
-        get { return position.x; }
-    }
-
-    /// <summary>
-    ///     The y position in the scene of the station GameObject.
-    /// </summary>
-    public float Y
-    {
-        get { return position.y; }
-    }
+    public Vector2 StationTruePosition { get { return position; } }
 
     /// <summary>
     ///     The x & y scale of the station GameObject (effects SpriteRenderer).
@@ -375,40 +467,134 @@ public class Station
         get { return accessor.transform.localScale.x; }
         set { accessor.transform.localScale.Set(value, value, 1); }
     }
-
+    #endregion
     #endregion
 
     #region CONSTRUCTORS
-
     /// <summary>
     ///     Creates a Station class instance, containing shortcuts to its associated station GameObject.
     /// </summary>
     /// <param name="_position">Where to place the station object once it is created.</param>
     /// <param name="_shape">The shape for this station, converts to enum format internally.</param>
-    /// <param name="_icon">The Sprite to apply to the station GameObject.</param>
     public Station(Vector2 _position, int _shape)
     {
         position = _position;
         shape = (STATION_SHAPE)_shape;
-
         pointConnections = new Point[8, 3];
         accessConnections = new Vector2[8, 3];
+        totalPoints = new List<Point>();
 
-        float length = 1.0f;
-        for (int _i = 0; _i < pointConnections.Count; ++_i)
+        // Define the 24 points for station access.
+        float _length = 0.1f;
+        float _offsetLength = 0.05f;
+        for (int _i = 0; _i < 8; ++_i)
         {
-            accessConnections[_i, 1] = new Vector2(position.x + length * Mathf.Cos((Mathf.PI / 2) * _i), position.y + length * Mathf.Sign((Mathf.PI / 2) * _i) );
-            accessConnections[_i, 1] = new Vector2(position.x + length * Mathf.Cos((Mathf.PI / 2) * _i), position.y + length * Mathf.Sign((Mathf.PI / 2) * _i));
-
+            accessConnections[_i, 0] = new Vector2(
+                    position.x + _length * Mathf.Cos((Mathf.PI / 4) * _i), 
+                    position.y + _length * Mathf.Sin((Mathf.PI / 4) * _i));
+            accessConnections[_i, 1] = new Vector2(
+                    accessConnections[_i, 1].x + _offsetLength * Mathf.Cos((Mathf.PI / 2) * _i + (Mathf.PI / 2)),
+                    accessConnections[_i, 1].y + _offsetLength * Mathf.Sin((Mathf.PI / 2) * _i + (Mathf.PI / 2)));
+            accessConnections[_i, 2] = new Vector2(
+                    accessConnections[_i, 1].x + _offsetLength * Mathf.Cos((Mathf.PI / 2) * _i - (Mathf.PI / 2)),
+                    accessConnections[_i, 1].y + _offsetLength * Mathf.Sin((Mathf.PI / 2) * _i - (Mathf.PI / 2)));
         }
+        debugMode = true;
 
-
-
+        // Set the collider
+        collider = new RectCollider(_position.x - 0.4f, _position.x + 0.4f, _position.y + 0.4f, _position.y - 0.4f);
     }
-
     #endregion
 
-    #region Methods
+    #region METHODS
+    /// <summary>
+    /// Whether or not a given position in the scene is within the station's collider.
+    /// </summary>
+    /// <param name="_position">The position to check.</param>
+    /// <returns>Whether or not the position was within the collider.</returns>
+    public bool PositionInStationCollider(Vector2 _position)
+    {
+        return collider.PositionInCollider(_position);
+    }
+
+    /// <summary>
+    ///     Returns the position of an access connection using a given angle's index and access slot.
+    /// </summary>
+    /// <param name="_accessAngleIndex">The angle's index to access through.</param>
+    /// <param name="_accessSlot">The slot in a set angle's index to access.</param>
+    /// <returns>The position to access.</returns>
+    public Vector2 GetAccessConnection(int _accessAngleIndex, int _accessSlot)
+    {
+        return accessConnections[_accessAngleIndex, _accessSlot];
+    }
+
+    /// <summary>
+    ///     Returns the point in a connection using a given angle's index and access slot.
+    /// </summary>
+    /// <param name="_accessAngleIndex">The angle's index to access through.</param>
+    /// <param name="_accessSlot">The slot in a set angle's index to access.</param>
+    /// <returns>The point to access.</returns>
+    public Point GetPointConnection (int _accessAngleIndex, int _accessSlot)
+    {
+        return pointConnections[_accessAngleIndex, _accessSlot];
+    }
+
+    /// <summary>
+    ///     Returns the point in a connection using a given angle's index and access slot.
+    /// </summary>
+    /// <param name="_accessAngleIndex">The angle's index to access through.</param>
+    /// <param name="_accessSlot">The slot in a set angle's index to access.</param>
+    /// <param name="_point">The point to set here.</param>
+    public void SetPointConnection (int _accessAngleIndex, int _accessSlot, Point _point)
+    {
+        pointConnections[_accessAngleIndex, _accessSlot] = _point;
+    }
+
+    /*/// <summary>
+    ///     Sets a Point into a designated entry or exit slot in this Station.
+    /// </summary>
+    /// <param name="_accessAngleIndex">The angle that accessing should go through.</param>
+    /// <param name="_point">The point that is linking with this station.</param>
+    /// <param name="_isEntry">Whether or not the point should be treated as entering this station.</param>
+    /// <returns></returns>
+    public bool SetPoint (int _accessAngleIndex, Point _point, bool _isEntry)
+    {
+        int _pointIndex = _point.Line.IndexOf(_point);
+        // Check where to place point off of this station.
+        if (_pointIndex == 0 && _point.Line.Count == 1)
+        {
+            //pointConnections[_accessAngle, _i] = _point;
+            totalPoints.Add(_point);
+            _point.AccessEntryAngleIndex = -1;
+            _point.AccessEntrySlot = -1;
+            _point.AccessExitAngleIndex = _accessAngleIndex;
+            _point.AccessExitSlot = -1;
+            return true;
+        }
+        else if (_pointIndex == _point.Line.Count - 1)
+        {
+            // This is currently the last point in line, set previous exit to match up if possible.
+            for (int _i = 0; _i < 3; ++_i)
+            {
+                if (_point.Line[_pointIndex - 1].TiedStation.GetPointConnection(
+                            _point.Line[_pointIndex - 1].AccessExitAngleIndex, _i) == null &&
+                        pointConnections[_accessAngleIndex, _i] == null)
+                {
+                    // Set data to this station for this point.
+                    totalPoints.Add(_point);
+                    pointConnections[_accessAngleIndex, _i] = _point;
+                    _point.AccessEntryAngleIndex = _accessAngleIndex;
+                    _point.AccessEntrySlot = _i;
+                    // Set previous point's data to its station.
+                    _point.Line[_pointIndex - 1].TiedStation.SetPointConnection(
+                            _point.Line[_pointIndex - 1].AccessExitAngleIndex, _i, _point.Line[_pointIndex - 1]);
+                    _point.Line[_pointIndex - 1].AccessEntrySlot = _i;
+                }
+            }
+        }
+        // TODO - allow injecting of new lines in between, and fixing of line slots.        
+        return false;
+    }*/
 
     /// <summary>
     ///     Injects the action GameObject of the station in since it can only be created in the main class.
@@ -417,35 +603,223 @@ public class Station
     /// <param name="_icon">The sprite to use for this game object</param>
     public void InjectStationObject(GameObject _stationGameObject, Sprite _icon)
     {
-        if (accessor != null)
-        {
-            return;
-        }
-
+        if (accessor != null) return;
         accessor = _stationGameObject;
         accessor.transform.position = position;
         accessor.GetComponent<SpriteRenderer>().sprite = _icon;
     }
-
     #endregion
 }
 
 public class Point
 {
     #region FIELDS
-
-
-
+    private List<Point> line;
+    private Station tiedStation;
+    private int accessEntryAngleIndex;
+    private int accessEntrySlot;
+    private int accessExitAngleIndex;
+    private int accessExitSlot;
+    private bool heldByMouse;
     #endregion
 
     #region PROPERTIES
+    /// <summary>
+    /// The line this point falls within.
+    /// </summary>
+    public List<Point> Line { get { return line; } }
+    /// <summary>
+    /// The station this line is tied to.
+    /// </summary>
+    public Station TiedStation { get { return tiedStation; } }
+
+    #region ENTRY & EXITS
+    /// <summary>
+    /// The angle this station should enter at into a station.
+    /// </summary>
+    public int AccessEntryAngleIndex { get { return accessEntryAngleIndex; } set { accessEntryAngleIndex = value; } }
+    /// <summary>
+    /// Within one of the 8 directions lines can link up to a station, this point enters into the given slot of a direction.
+    /// </summary>
+    public int AccessEntrySlot { get { return accessEntrySlot; } set { accessEntrySlot = value; } }
+    /// <summary>
+    /// The angle this station should exit at from a station.
+    /// </summary>
+    public int AccessExitAngleIndex { get { return accessExitAngleIndex; } set { accessExitAngleIndex = value; } }
+    /// <summary>
+    /// Within one of the 8 directions lines can link up to a station, this point exits from the given slot of a direction.
+    /// </summary>
+    public int AccessExitSlot { get { return accessExitSlot; } set { accessExitSlot = value; } }
+    #endregion
     #endregion
 
-    #region CONSTRUCTOS
-
+    #region CONSTRUCTORS
+    /// <summary>
+    /// Creates a point and links it up with a station and associated line.
+    /// </summary>
+    /// <param name="_line">The line this point is within.</param>
+    /// <param name="_tiedStation">The station to link up with.</param>
+    public Point (List<Point> _line, Station _tiedStation)
+    {
+        line = _line;
+        tiedStation = _tiedStation;
+        accessEntryAngleIndex = -1;
+        accessEntrySlot = -1;
+        accessExitAngleIndex = -1;
+        accessExitSlot = -1;
+        //tiedStation.SetPoint(accessEntryAngleIndex, this, true);
+    }
+    /// <summary>
+    /// When creating a point at a station with both a known entry and exit.
+    /// </summary>
+    /// <param name="_line">The line this point is within.</param>
+    /// <param name="_tiedStation">The station to link up with.</param>
+    /// <param name="_accessEntryAngle">The starting angle to use for this point.</param>
+    /// <param name="_accessExitAngle">The angle to leave at for this point.</param>
+    public Point (List<Point> _line, Station _tiedStation, int _accessEntryAngle, int _accessExitAngle)
+    {
+        line = _line;
+        tiedStation = _tiedStation;
+        accessEntryAngleIndex = _accessEntryAngle;
+        accessExitAngleIndex = _accessExitAngle;
+        
+    }
     #endregion
 
     #region METHODS
+    #endregion
+}
+
+public class LineManager
+{
+    #region FIELDS
+    private MouseData mouseData;
+    private List<Station> stations;
+    private LineRenderer[] lineRenderers;
+    private List<Point>[] linePoints;
+    private List<Vector2>[] bendPoints;
+
+    private Point playerConnectedPoint;
+    private int playerConnectedLineIndex;
+    private int currentNewLine;
+    #endregion
+
+    #region PROPERTIES
+
+    #endregion
+
+    #region CONSTRUCTORS
+    public LineManager (MouseData _mouseData, List<Station> _stations, LineRenderer[] _lineRenderers)
+    {
+        mouseData = _mouseData;
+        stations = _stations;
+        lineRenderers = _lineRenderers;
+        linePoints = new List<Point>[lineRenderers.Length];
+        for (int _i = 0; _i < lineRenderers.Length; ++_i)
+        {
+            linePoints[_i] = new List<Point> ();
+        }
+        bendPoints = new List<Vector2>[lineRenderers.Length];
+        playerConnectedPoint = null;
+        playerConnectedLineIndex = 0;
+        currentNewLine = 0;
+    }
+    #endregion
+
+    #region METHODS
+    public void PlayerInput ()
+    {
+        if (playerConnectedPoint == null)
+        {
+            // Player can click stations.
+            for (int _i = 0; _i < stations.Count; ++_i)
+            {
+                if (stations[_i].PositionInStationCollider(mouseData.Position))
+                {
+                    if (mouseData.LeftPressed)
+                    {
+                        // Create new line from scratch.
+                        playerConnectedPoint = new Point(linePoints[currentNewLine], stations[_i]);
+                        linePoints[currentNewLine].Add(playerConnectedPoint);
+                        linePoints[currentNewLine].Add(null);
+                        playerConnectedLineIndex = currentNewLine;
+                        currentNewLine++;
+                    }
+                }
+            }
+        }
+        else
+        {
+            // Player can hover over stations.
+            for (int _i = 0; _i < stations.Count; ++_i)
+            {
+                if (stations[_i].PositionInStationCollider(mouseData.Position))
+                {
+                    bool _stationExists = false;
+                    for (int _j = 0; _j < linePoints[playerConnectedLineIndex].Count; ++_j)
+                    {
+                        if (linePoints[playerConnectedLineIndex][_j] == null) continue;
+                        if (linePoints[playerConnectedLineIndex][_j].TiedStation == stations[_i])
+                        {
+                            _stationExists = true;
+                            break;
+                        }
+                    }
+                    if (!_stationExists)
+                    {
+                        // Create new line from scratch.
+                        playerConnectedPoint = new Point(linePoints[playerConnectedLineIndex], stations[_i]);
+                        linePoints[playerConnectedLineIndex].Insert(
+                                linePoints[playerConnectedLineIndex].Count - 1, playerConnectedPoint);
+                    }
+                }
+            }
+
+            if (mouseData.LeftReleased)
+            {
+                playerConnectedPoint = null;
+                linePoints[playerConnectedLineIndex].Remove(null);
+                if (linePoints[playerConnectedLineIndex].Count == 1)
+                {
+                    Debug.Log("o no");
+                    // remove point here.
+                    linePoints[playerConnectedLineIndex].Clear();
+                    currentNewLine--;
+                }
+            }
+        }
+
+        UpdateRenderer();
+    }
+
+    /// <summary>
+    /// Causes all line renderers to have their data updated.
+    /// </summary>
+    public void UpdateRenderer()
+    {
+        List<Vector3> _allPointPositions = new List<Vector3>();
+        for (int _i = 0; _i < linePoints.Length; ++_i)
+        {
+            for (int _j = 0; _j < linePoints[_i].Count; ++_j)
+            {
+                if (linePoints[_i][_j] == null)
+                {
+                    // Null found, use mouse position instead.
+                    _allPointPositions.Add(mouseData.Position);
+                }
+                else _allPointPositions.Add(linePoints[_i][_j].TiedStation.StationTruePosition);
+            }
+            lineRenderers[_i].positionCount = _allPointPositions.Count;
+
+            lineRenderers[_i].SetPositions(_allPointPositions.ToArray());
+            _allPointPositions.Clear();
+        }
+    }
+
+    /*public Point AddPoint(int _lineIndex, Station _tiedStation)
+    {
+
+    }*/
     #endregion
 }
 
@@ -551,7 +925,6 @@ public class StationGridReference
 public class StationGrid
 {
     #region FIELDS
-
     private bool debugMode;
     private CameraData cameraData;
     private float distanceBetweenGridIndices;
@@ -567,7 +940,6 @@ public class StationGrid
     private int stationMaximumTotal;
     private List<Station> stations;
     private List<Station>[] shapeStations;
-
     #endregion
 
     #region PROPERTIES
@@ -575,27 +947,14 @@ public class StationGrid
     /// <summary>
     ///     Whether or not the StationGrid is in debug mode for visualizing station spawning.
     /// </summary>
-    public bool DebugMode
-    {
-        get { return debugMode; }
-    }
+    public bool DebugMode { get { return debugMode; } set { debugMode = value; } }
 
     /// <summary>
     ///     Returns the dimensions of the 'trueGrid'.
     /// </summary>
-    public Vector2Int TrueGridDimensions
-    {
-        get { return trueGridDimensions; }
-    }
+    public Vector2Int TrueGridDimensions { get { return trueGridDimensions; } }
 
-    /// <summary>
-    ///     Returns the number of currently existing stations.
-    /// </summary>
-    public int stationCount
-    {
-        get { return stations.Count; }
-    }
-
+    #region STATION SPAWN AREA WITHIN CAMERA
     /// <summary>
     ///     The left edge of the current camera view where stations can spawn.
     /// </summary>
@@ -639,7 +998,7 @@ public class StationGrid
             return cameraData.Bottom + cameraData.Height * (1.0f - stationPlacementScreenPercent) * 0.5f;
         }
     }
-
+    #endregion
     #endregion
 
     #region CONSTRUCTORS
@@ -655,10 +1014,12 @@ public class StationGrid
     /// <param name="_stationBoundaryRadius">The radius around a station to block other stations from spawning in.</param>
     /// <param name="_stationPrefab">The basic station prefab to pull from.</param>
     /// <param name="_stationSprites">Array of sprites for stations.</param>
-    public StationGrid(
+    /// <param name="_stations">A list that contains all statons, is shared in main.</param>
+    public StationGrid (
         CameraData _cameraData, float _distanceBetweenGridIndices,
         int _startingStationTotal, int _stationMaximumTotal,
-        float _stationPlacementScreenPercent, float _stationBoundaryRadius)
+        float _stationPlacementScreenPercent, float _stationBoundaryRadius,
+        List<Station> _stations)
     {
         // STEP 1:
         // Insert data into generic fields.
@@ -674,8 +1035,7 @@ public class StationGrid
         {
             shapeStations[_i] = new List<Station>();
         }
-
-        stations = new List<Station>();
+        stations = _stations;
 
         // STEP 2:
         // Get the grid dimensions.
@@ -727,7 +1087,6 @@ public class StationGrid
     #endregion
 
     #region METHODS
-
     /// <summary>
     ///     Returns a StationGridReference at a given position in the 'trueGrid'.
     /// </summary>
@@ -777,10 +1136,7 @@ public class StationGrid
     {
         // STEP 1:
         // Make sure a station can still be added.
-        if (removalGrid.Count == 0 || stations.Count == stationMaximumTotal)
-        {
-            return null;
-        }
+        if (removalGrid.Count == 0 || stations.Count == stationMaximumTotal) return null;
 
         // STEP 2:
         // Get all slots that are within current camera view.
@@ -805,10 +1161,7 @@ public class StationGrid
 
         // STEP 3:
         // If none are available cancel here.
-        if (_available.Count == 0)
-        {
-            return null;
-        }
+        if (_available.Count == 0) return null;
 
         // STEP 4:
         // Pick and create random station.
@@ -890,22 +1243,13 @@ public class StationGrid
     {
         return stations[_index];
     }
-
-    /// <summary>
-    ///     Toggles on / off debug mode for the StationGrid.
-    /// </summary>
-    public void ToggleDebugMode()
-    {
-        debugMode = !debugMode;
-    }
-
     #endregion
 }
 #endregion
 
 public class Manager : MonoBehaviour
 {
-    #region Static Instance
+    #region STATIC INSTANCE
 
     public static Manager Instance { get; private set; }
 
@@ -926,46 +1270,41 @@ public class Manager : MonoBehaviour
 
     #region FIELDS
 
-    // Serialized Elements
-    [SerializeField]
-    private GameObject stationPrefab;
+    // Prefabs.
+    [SerializeField] private GameObject stationPrefab;
+    [SerializeField] private GameObject lineRendererPrefab;
+    [SerializeField] private Sprite[] stationSprites = new Sprite[(int)STATION_SHAPE.LENGTH];
 
-    [SerializeField]
-    private Sprite[] stationSprites = new Sprite[(int)STATION_SHAPE.LENGTH];
-
-    [SerializeField]
-    private int startingStationTotal = 2;
-
-    [SerializeField]
-    private int stationMaximumTotal = 10;
-
-    // Key element storage systems
+    // Basic System Storage.
+    private MouseData mouseData;
     private List<Timer> timers;
     private CameraData cameraData;
+    [SerializeField] private float maxCameraTime = 600f;
+    private Timer cameraZoomOutTime;
+
+    //Station Manager
+    [SerializeField] private int startingStationTotal = 3;
+    [SerializeField] private int stationMaximumTotal = 20;
+    [SerializeField] private float timeBetweenStationSpawns = 15f;
+    private Timer stationSpawnTimer;
     private StationGrid stationGrid;
 
+    // Station Handling
+    private List<Station> stations;
+
+    // Line Manger
+    private LineRenderer[] lineRenderers;
+    private LineManager lineManager;
+
+    // Game Pausing.
     private bool isGameRunning = false;
     public bool isGamePaused = false; // Add this to track pause state
 
-    //Camera Zoom Out
-    [SerializeField]
-    private float maxCameraTime = 600f;
-
-    private Timer cameraZoomOutTime;
-
-    //Station Spawning
-    [SerializeField]
-    private float timeBetweenStationSpawns = 15f;
-
-    private Timer stationSpawnTimer;
-
     // Train Resources
     public int availableTrains = 3; // Example starting value
-
     #endregion
 
     #region UNITY MONOBEHAVIOR
-
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     private void Start()
     {
@@ -973,28 +1312,56 @@ public class Manager : MonoBehaviour
         // Insert data into generic fields.
         isGameRunning = true;
         isGamePaused = false; // Initialize pause state
+        mouseData = new MouseData();
         cameraData = new CameraData(Camera.main, 5.0f, 10.0f);
-        //cameraData.ToggleDebugMode();
+        cameraData.DebugMode = true;
         timers = new List<Timer>();
-        stationGrid = new StationGrid(cameraData, 1.0f, startingStationTotal, stationMaximumTotal, 0.9f, 3.0f);
-        stationGrid.ToggleDebugMode();
-
+        stations = new List<Station>();
+        stationGrid = new StationGrid(cameraData, 1.0f, startingStationTotal, stationMaximumTotal, 0.9f, 3.0f, stations);
+        stationGrid.DebugMode = true;
+        
         // STEP 2:
         // Create starting stations.
-        for (int _i = 0; _i < startingStationTotal; ++_i)
-        {
-            CreateStation();
-        }
+        for (int _i = 0; _i < startingStationTotal; ++_i) { CreateStation(); }
 
         // STEP 3:
         // Set variables for camera size change  and station spawning.
         cameraZoomOutTime = CreateTimer(maxCameraTime, true);
         stationSpawnTimer = CreateTimer(timeBetweenStationSpawns, false);
+
+        // STEP 4:
+        // Create the line manager.
+        lineRenderers = new LineRenderer[8];
+        for (int _i = 0; _i < lineRenderers.Length; ++_i)
+        {
+            lineRenderers[_i] = Instantiate(lineRendererPrefab).GetComponent<LineRenderer>();
+            switch (_i)
+            {
+                case 0:
+                    lineRenderers[_i].startColor = Color.yellow;
+                    lineRenderers[_i].endColor = Color.yellow;
+                    break;
+
+                case 1:
+                    lineRenderers[_i].startColor = Color.red;
+                    lineRenderers[_i].endColor = Color.red;
+                    break;
+
+                case 2:
+                    lineRenderers[_i].startColor = Color.blue;
+                    lineRenderers[_i].endColor = Color.blue;
+                    break;
+
+            }
+        }
+        lineManager = new LineManager(mouseData, stations, lineRenderers);
     }
 
     // Update is called once per frame
     private void Update()
     {
+        mouseData.SetData();
+
         if (!isGamePaused) // Only update game elements if not paused
         {
             // STEP 1:
@@ -1012,12 +1379,13 @@ public class Manager : MonoBehaviour
                 CreateStation();
             }
         }
+
+        lineManager.PlayerInput();
     }
 
     #endregion
 
     #region METHODS
-
     /// <summary>
     ///     Creates a station and instantiates its associated object in the scene.
     /// </summary>
@@ -1044,6 +1412,8 @@ public class Manager : MonoBehaviour
         timers.Add(_timer);
         return _timer;
     }
+
+    #region UI CONTENT
 
     // Methods to control game state from UI
     public void PauseGame()
@@ -1123,16 +1493,11 @@ public class Manager : MonoBehaviour
         Debug.Log("Trains added. Available trains: " + availableTrains);
     }
     #endregion
-
+    
     #region GIZMOS
-
-    // Gizmos
     private void OnDrawGizmos()
     {
-        if (!isGameRunning)
-        {
-            return;
-        }
+        if (!isGameRunning) return;
 
         // Show camera size.
         if (cameraData.DebugMode)
@@ -1202,7 +1567,20 @@ public class Manager : MonoBehaviour
             }
         }
 
-        #endregion
-
+        Gizmos.color = Color.white;
+        for (int _i = 0; _i < stations.Count; _i++)
+        {
+            if (stations[_i].DebugMode)
+            {
+                for (int _j = 0; _j < 8; ++_j)
+                {
+                    Gizmos.DrawSphere(stations[_i].AccessConnections[_j, 0], 0.05f);
+                    Gizmos.DrawSphere(stations[_i].AccessConnections[_j, 1], 0.05f);
+                    Gizmos.DrawSphere(stations[_i].AccessConnections[_j, 2], 0.05f);
+                }
+            }
+        }
     }
+    #endregion
+    #endregion
 }
