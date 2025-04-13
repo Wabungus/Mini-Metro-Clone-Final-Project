@@ -697,11 +697,18 @@ public class LineManager
     private List<Station> stations;
     private LineRenderer[] lineRenderers;
     private List<Point>[] linePoints;
-    private List<Vector2>[] bendPoints;
+    private List<Vector2>[] bendPositions;
 
     private Point playerConnectedPoint;
     private int playerConnectedLineIndex;
+    private int playerConnectedPointIndex;
     private int currentNewLine;
+
+    private float playerLineAngle;
+    private float oldPlayerLineAngle;
+    private float fixedLineStartAngle;
+    private float fixedLineEndAngle;
+    private bool bendRight;
     #endregion
 
     #region PROPERTIES
@@ -719,16 +726,29 @@ public class LineManager
         {
             linePoints[_i] = new List<Point> ();
         }
-        bendPoints = new List<Vector2>[lineRenderers.Length];
+        bendPositions = new List<Vector2>[lineRenderers.Length];
+        for (int _i = 0; _i < lineRenderers.Length; ++_i)
+        {
+            bendPositions[_i] = new List<Vector2>();
+        }
         playerConnectedPoint = null;
         playerConnectedLineIndex = 0;
+        playerConnectedPointIndex = 0;
         currentNewLine = 0;
+
+        playerLineAngle = 0.0f;
+        oldPlayerLineAngle = 0.0f;
+        fixedLineStartAngle = 0;
+        fixedLineEndAngle = 0;
+        bendRight = false;
     }
     #endregion
 
     #region METHODS
     public void PlayerInput ()
     {
+        oldPlayerLineAngle = playerLineAngle;
+
         if (playerConnectedPoint == null)
         {
             // Player can click stations.
@@ -743,20 +763,35 @@ public class LineManager
                         linePoints[currentNewLine].Add(playerConnectedPoint);
                         linePoints[currentNewLine].Add(null);
                         playerConnectedLineIndex = currentNewLine;
+                        playerConnectedPointIndex = 0;
+                        bendPositions[currentNewLine].Add(Vector2.zero);
                         currentNewLine++;
+
+                        UpdateBend(
+                                playerConnectedLineIndex, playerConnectedPointIndex,
+                                playerConnectedPoint.TiedStation.StationTruePosition.x,
+                                playerConnectedPoint.TiedStation.StationTruePosition.y,
+                                mouseData.X, mouseData.Y);
                     }
                 }
             }
         }
         else
         {
+            // Update the position of the currently held line's bends.
+            UpdateBend(
+                    playerConnectedLineIndex, playerConnectedPointIndex,
+                    playerConnectedPoint.TiedStation.StationTruePosition.x, 
+                    playerConnectedPoint.TiedStation.StationTruePosition.y,
+                    mouseData.X, mouseData.Y);
+
             // Player can hover over stations.
             for (int _i = 0; _i < stations.Count; ++_i)
             {
                 if (stations[_i].PositionInStationCollider(mouseData.Position))
                 {
                     bool _stationExists = false;
-                    for (int _j = 0; _j < linePoints[playerConnectedLineIndex].Count; ++_j)
+                    for (int _j = 1; _j < linePoints[playerConnectedLineIndex].Count; ++_j)
                     {
                         if (linePoints[playerConnectedLineIndex][_j] == null) continue;
                         if (linePoints[playerConnectedLineIndex][_j].TiedStation == stations[_i])
@@ -765,31 +800,245 @@ public class LineManager
                             break;
                         }
                     }
+
+                    // Check for 0 index to allow for looping.
+                    bool _completeLoop = false;                    
+                    if (linePoints[playerConnectedLineIndex][0].TiedStation == stations[_i])
+                    {
+                        if (linePoints[playerConnectedLineIndex].Count <= 3) _stationExists = true;
+                        else _completeLoop = true;
+                    }
+
                     if (!_stationExists)
                     {
                         // Create new line from scratch.
                         playerConnectedPoint = new Point(linePoints[playerConnectedLineIndex], stations[_i]);
                         linePoints[playerConnectedLineIndex].Insert(
                                 linePoints[playerConnectedLineIndex].Count - 1, playerConnectedPoint);
+                        bendPositions[playerConnectedLineIndex].Add(Vector2.zero);
+                        playerConnectedPointIndex++;
+                        UpdateBend(
+                                playerConnectedLineIndex, playerConnectedPointIndex,
+                                playerConnectedPoint.TiedStation.StationTruePosition.x,
+                                playerConnectedPoint.TiedStation.StationTruePosition.y,
+                                mouseData.X, mouseData.Y);
+
+                        if (_completeLoop) MouseDropLine();
                     }
                 }
             }
 
             if (mouseData.LeftReleased)
             {
-                playerConnectedPoint = null;
-                linePoints[playerConnectedLineIndex].Remove(null);
-                if (linePoints[playerConnectedLineIndex].Count == 1)
-                {
-                    Debug.Log("o no");
-                    // remove point here.
-                    linePoints[playerConnectedLineIndex].Clear();
-                    currentNewLine--;
-                }
+                MouseDropLine();
             }
         }
 
         UpdateRenderer();
+    }
+
+    /// <summary>
+    /// Used to cause whatever line is currently being held to be dropped.
+    /// </summary>
+    private void MouseDropLine()
+    {
+        playerConnectedPoint = null;
+        linePoints[playerConnectedLineIndex].Remove(null);
+        bendPositions[playerConnectedLineIndex].RemoveAt(playerConnectedPointIndex);
+        if (linePoints[playerConnectedLineIndex].Count == 1)
+        {
+            // remove point here.
+            linePoints[playerConnectedLineIndex].Clear();
+            currentNewLine--;
+        }
+    }
+
+    /// <summary>
+    /// Sets the position of a bend point for a line.
+    /// </summary>
+    /// <param name="_bendLine">The line which the desired points are within.</param>
+    /// <param name="_bendIndex">The index in bendPositions this bend is at.</param>
+    /// <param name="_startX">The starting x position that the bend will be placed after.</param>
+    /// <param name="_startY">The starting y position that the bend will be placed after.</param>
+    /// <param name="_endX">The ending x position that the bend will be placed after.</param>
+    /// <param name="_endY">The ending y position that the bend will be placed after.</param>
+    private void UpdateBend(int _bendLine, int _bendIndex, float _startX, float _startY, float _endX, float _endY)
+    {
+        // STEP 1:
+        // Calculate the angles to start and end the bend with.
+        
+        playerLineAngle =
+                Mathf.Repeat(
+                    Mathf.Atan2(
+                        _endY - _startY,
+                        _endX - _startX) 
+                    * Mathf.Rad2Deg,
+                    360.0f);
+        fixedLineStartAngle =
+                (int)Mathf.Repeat(
+                    Mathf.Floor(
+                        (playerLineAngle + 25.5f) / 45.0f)
+                    * 45.0f, 360);
+        if (fixedLineStartAngle == 0)
+        {
+            fixedLineEndAngle = (playerLineAngle > 270) ? 315 : 45;
+        }
+        else
+        {
+            fixedLineEndAngle =
+                    (playerLineAngle <= fixedLineStartAngle)
+                    ? (int)Mathf.Repeat(fixedLineStartAngle - 45.0f, 360)
+                    : (int)Mathf.Repeat(fixedLineStartAngle + 45.0f, 360);
+        }
+
+        // STEP 2:
+        // Set bend position proprer, accounting for direction of the bend.
+        if (bendRight)
+        {
+            if (fixedLineStartAngle == 0 && fixedLineEndAngle == 315)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 0 && fixedLineEndAngle == 45)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX + Mathf.Abs(_endY - _startY), _endY);
+            }
+            else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 0)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX + Mathf.Abs(_endY - _startY), _endY);
+            }
+            else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 90)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 45)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 135)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 90)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 180)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 135)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 225)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+            }
+            else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 180)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+            }
+            else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 270)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 225)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 315)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 270)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 0)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+            }
+
+            if (Mathf.Floor(oldPlayerLineAngle / 45.0f) < Mathf.Floor(playerLineAngle / 45.0f) &&
+                !(Mathf.Floor(oldPlayerLineAngle / 45.0f) == 0 && Mathf.Floor(playerLineAngle / 45.0f) == 7))
+            {
+                bendRight = false;
+            }
+        }
+        else
+        {
+            if (fixedLineStartAngle == 0 && fixedLineEndAngle == 315)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 0 && fixedLineEndAngle == 45)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 0)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 90)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 45)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 135)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 90)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 180)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+            }
+            else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 135)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+            }
+            else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 225)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 180)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+            }
+            else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 270)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 225)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+            }
+            else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 315)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 270)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+            }
+            else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 0)
+            {
+                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+            }
+
+            if (Mathf.Floor(oldPlayerLineAngle / 45.0f) > Mathf.Floor(playerLineAngle / 45.0f) &&
+                !(Mathf.Floor(oldPlayerLineAngle / 45.0f) == 7 && Mathf.Floor(playerLineAngle / 45.0f) == 0))
+            {
+                bendRight = true;
+            }
+        }
     }
 
     /// <summary>
@@ -808,6 +1057,8 @@ public class LineManager
                     _allPointPositions.Add(mouseData.Position);
                 }
                 else _allPointPositions.Add(linePoints[_i][_j].TiedStation.StationTruePosition);
+
+                if (_j < linePoints[_i].Count - 1) _allPointPositions.Add(bendPositions[_i][_j]);
             }
             lineRenderers[_i].positionCount = _allPointPositions.Count;
 
