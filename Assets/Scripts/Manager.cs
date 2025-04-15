@@ -1,3 +1,4 @@
+using NUnit.Framework;
 using System.Collections.Generic;
 using TMPro.SpriteAssetUtilities;
 using Unity.VisualScripting;
@@ -412,6 +413,75 @@ public class RectCollider
     #endregion
 }
 
+public class AngledRectCollider
+{
+    #region FIELDS
+    private Vector2[] points;
+    private Vector2[] lineSubtracts;
+    private float[] lineAs;
+    #endregion
+
+    #region PROPERTIES
+    /// <summary>
+    /// The position of pointA.
+    /// </summary>
+    public Vector2 PointA { get { return points[0]; } }
+    /// <summary>
+    /// The position of pointB.
+    /// </summary>
+    public Vector2 PointB { get { return points[1]; } }
+    /// <summary>
+    /// The position of pointC.
+    /// </summary>
+    public Vector2 PointC { get { return points[2]; } }
+    /// <summary>
+    /// The position of pointD.
+    /// </summary>
+    public Vector2 PointD { get { return points[3]; } }
+    #endregion
+
+    #region CONSTRUCTOR
+    public AngledRectCollider (Vector2 _pointA, Vector2 _pointB, Vector2 _pointC, Vector2 _pointD)
+    {
+        points = new Vector2[] { _pointA, _pointB, _pointC, _pointD, _pointA };
+
+        /*lineSubtracts = new Vector2[4];
+        lineSubtracts[0] = new Vector2(_pointB.x - _pointA.x, _pointB.y - _pointA.y);
+        lineSubtracts[1] = new Vector2(_pointC.x - _pointB.x, _pointC.y - _pointB.y);
+        lineSubtracts[2] = new Vector2(_pointD.x - _pointC.x, _pointD.y - _pointC.y);
+        lineSubtracts[3] = new Vector2(_pointA.x - _pointD.x, _pointA.y - _pointD.y);
+
+        lineAs = new float[4];
+        lineAs[0] = points[0].y * lineSubtracts[0].x - points[0].x * lineSubtracts[0].y;
+        lineAs[1] = points[1].y * lineSubtracts[1].x - points[1].x * lineSubtracts[1].y;
+        lineAs[2] = points[2].y * lineSubtracts[2].x - points[2].x * lineSubtracts[2].y;
+        lineAs[3] = points[3].y * lineSubtracts[3].x - points[3].x * lineSubtracts[3].y;*/
+    }
+    #endregion
+
+    #region METHODS
+    /// <summary>
+    /// Check whether a point is within the 4 sided polygon by drawing a line from the point
+    /// to the origin (0,0). If an odd number of collisions was found then the line is
+    /// within the polygon.
+    /// </summary>
+    /// <param name="_position">The position to check against the collider.</param>
+    /// <returns>Returns a bool of whether the collision was a success.</returns>
+    public bool PositionInCollider (Vector2 _position)
+    {
+        int _successes = 0;
+        for (int _i = 0; _i < 4; ++_i)
+        {
+            float _a = (points[_i + 1].x - points[_i].x) * (points[_i].y - 0) - (points[_i + 1].y - points[_i].y) * (points[_i].x - 0);
+            float _b = (points[_i + 1].x - points[_i].x) * (_position.y - 0) - (points[_i + 1].y - points[_i].y) * (_position.x - 0);
+            float _c = (_position.x - 0) * (points[_i].y - 0) - (_position.y - 0) * (points[_i].x - 0);
+            if (_b != 0.0f && _a / _b > 0 && _a / _b < 1 && _a / _c > 0 && _c / _b < 1) ++_successes;
+        }
+        return (_successes == 1 || _successes == 3);
+    }
+    #endregion
+}
+
 public class Station
 {
     #region FIELDS
@@ -693,6 +763,8 @@ public class Point
 public class LineManager
 {
     #region FIELDS
+    private bool debugMode;
+    private float width;
     private MouseData mouseData;
     private List<Station> stations;
     private LineRenderer[] lineRenderers;
@@ -709,15 +781,30 @@ public class LineManager
     private float fixedLineStartAngle;
     private float fixedLineEndAngle;
     private bool bendRight;
+
+    private List<AngledRectCollider[]>[] colliders;
     #endregion
 
     #region PROPERTIES
+    /// <summary>
+    ///     Whether or not the camera is currently in debug mode.
+    /// </summary>
+    public bool DebugMode
+    {
+        get { return debugMode; }
+        set { debugMode = value; }
+    }
 
+    /// <summary>
+    /// Should be used exclusively for debug visual drawing.
+    /// </summary>
+    public List<AngledRectCollider[]>[] Colliders { get { return colliders; } }
     #endregion
 
     #region CONSTRUCTORS
     public LineManager (MouseData _mouseData, List<Station> _stations, LineRenderer[] _lineRenderers)
     {
+        width = 0.3f;
         mouseData = _mouseData;
         stations = _stations;
         lineRenderers = _lineRenderers;
@@ -741,6 +828,12 @@ public class LineManager
         fixedLineStartAngle = 0;
         fixedLineEndAngle = 0;
         bendRight = false;
+
+        colliders = new List<AngledRectCollider[]>[lineRenderers.Length];
+        for (int _i = 0; _i < lineRenderers.Length; ++_i)
+        {
+            colliders[_i] = new List<AngledRectCollider[]>();
+        }
     }
     #endregion
 
@@ -811,11 +904,25 @@ public class LineManager
 
                     if (!_stationExists)
                     {
+                        // Set the collider for the new line created.
+                        UpdateBend(
+                                playerConnectedLineIndex, playerConnectedPointIndex,
+                                playerConnectedPoint.TiedStation.StationTruePosition.x,
+                                playerConnectedPoint.TiedStation.StationTruePosition.y,
+                                stations[_i].StationTruePosition.x, stations[_i].StationTruePosition.y);
+                        colliders[playerConnectedLineIndex].Add(new AngledRectCollider[2]);
+                        SetCollider(
+                                playerConnectedLineIndex, playerConnectedPointIndex,
+                                playerConnectedPoint.TiedStation.StationTruePosition.x,
+                                playerConnectedPoint.TiedStation.StationTruePosition.y,
+                                stations[_i].StationTruePosition.x, stations[_i].StationTruePosition.y);
+
                         // Create new line from scratch.
                         playerConnectedPoint = new Point(linePoints[playerConnectedLineIndex], stations[_i]);
                         linePoints[playerConnectedLineIndex].Insert(
                                 linePoints[playerConnectedLineIndex].Count - 1, playerConnectedPoint);
                         bendPositions[playerConnectedLineIndex].Add(Vector2.zero);
+                        
                         playerConnectedPointIndex++;
                         UpdateBend(
                                 playerConnectedLineIndex, playerConnectedPointIndex,
@@ -830,6 +937,7 @@ public class LineManager
 
             if (mouseData.LeftReleased)
             {
+                // Set the collider for the new line created.
                 MouseDropLine();
             }
         }
@@ -849,6 +957,8 @@ public class LineManager
         {
             // remove point here.
             linePoints[playerConnectedLineIndex].Clear();
+            bendPositions[playerConnectedLineIndex].Clear();
+            colliders[playerConnectedLineIndex].Clear();
             currentNewLine--;
         }
     }
@@ -862,11 +972,10 @@ public class LineManager
     /// <param name="_startY">The starting y position that the bend will be placed after.</param>
     /// <param name="_endX">The ending x position that the bend will be placed after.</param>
     /// <param name="_endY">The ending y position that the bend will be placed after.</param>
-    private void UpdateBend(int _bendLine, int _bendIndex, float _startX, float _startY, float _endX, float _endY)
+    private void UpdateBend(int _lineIndex, int _bendPointIndex, float _startX, float _startY, float _endX, float _endY)
     {
         // STEP 1:
         // Calculate the angles to start and end the bend with.
-        
         playerLineAngle =
                 Mathf.Repeat(
                     Mathf.Atan2(
@@ -874,7 +983,7 @@ public class LineManager
                         _endX - _startX) 
                     * Mathf.Rad2Deg,
                     360.0f);
-        fixedLineStartAngle =
+        fixedLineStartAngle = 
                 (int)Mathf.Repeat(
                     Mathf.Floor(
                         (playerLineAngle + 25.5f) / 45.0f)
@@ -897,67 +1006,67 @@ public class LineManager
         {
             if (fixedLineStartAngle == 0 && fixedLineEndAngle == 315)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 0 && fixedLineEndAngle == 45)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX + Mathf.Abs(_endY - _startY), _endY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX + Mathf.Abs(_endY - _startY), _endY);
             }
             else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 0)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX + Mathf.Abs(_endY - _startY), _endY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX + Mathf.Abs(_endY - _startY), _endY);
             }
             else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 90)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 45)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 135)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 90)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 180)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 135)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 225)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
             }
             else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 180)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
             }
             else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 270)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 225)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 315)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 270)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 0)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
             }
 
             if (Mathf.Floor(oldPlayerLineAngle / 45.0f) < Mathf.Floor(playerLineAngle / 45.0f) &&
@@ -970,67 +1079,67 @@ public class LineManager
         {
             if (fixedLineStartAngle == 0 && fixedLineEndAngle == 315)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 0 && fixedLineEndAngle == 45)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 0)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 45 && fixedLineEndAngle == 90)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 45)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY + Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 90 && fixedLineEndAngle == 135)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 90)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY - Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 135 && fixedLineEndAngle == 180)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
             }
             else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 135)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX - Mathf.Abs(_endY - _startY), _endY);
             }
             else if (fixedLineStartAngle == 180 && fixedLineEndAngle == 225)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 180)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX + Mathf.Abs(_startY - _endY), _startY);
             }
             else if (fixedLineStartAngle == 225 && fixedLineEndAngle == 270)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 225)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX, _startY - Mathf.Abs(_endX - _startX));
             }
             else if (fixedLineStartAngle == 270 && fixedLineEndAngle == 315)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 270)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_startX, _endY + Mathf.Abs(_startX - _endX));
             }
             else if (fixedLineStartAngle == 315 && fixedLineEndAngle == 0)
             {
-                bendPositions[_bendLine][_bendIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
+                bendPositions[_lineIndex][_bendPointIndex] = new Vector2(_endX - Mathf.Abs(_startY - _endY), _startY);
             }
 
             if (Mathf.Floor(oldPlayerLineAngle / 45.0f) > Mathf.Floor(playerLineAngle / 45.0f) &&
@@ -1038,7 +1147,78 @@ public class LineManager
             {
                 bendRight = true;
             }
+
+            float _transferAngle = fixedLineStartAngle;
+            fixedLineStartAngle = fixedLineEndAngle;
+            fixedLineEndAngle = _transferAngle;
         }
+    }
+
+    private void SetCollider(int _lineIndex, int _bendPointIndex, float _startX, float _startY, float _endX, float _endY)
+    {
+        // STEP 1:
+        // Set values.
+        colliders[_lineIndex][_bendPointIndex] = new AngledRectCollider[2];
+
+        // STEP 2:
+        // First half pre bend collider.
+        float _perpendicularAngle = fixedLineStartAngle + 90.0f;
+        Vector2 _pointOffset = new Vector2(
+                (width / 2.0f) * Mathf.Cos(_perpendicularAngle * Mathf.Deg2Rad),
+                (width / 2.0f) * Mathf.Sin(_perpendicularAngle * Mathf.Deg2Rad));
+
+        colliders[_lineIndex][_bendPointIndex][0] = new AngledRectCollider(
+                new Vector2(
+                    _startX + _pointOffset.x,
+                    _startY + _pointOffset.y),
+                new Vector2(
+                    bendPositions[_lineIndex][_bendPointIndex].x + _pointOffset.x,
+                    bendPositions[_lineIndex][_bendPointIndex].y + _pointOffset.y),
+                new Vector2(
+                    bendPositions[_lineIndex][_bendPointIndex].x - _pointOffset.x,
+                    bendPositions[_lineIndex][_bendPointIndex].y - _pointOffset.y),
+                new Vector2(
+                    _startX - _pointOffset.x,
+                    _startY - _pointOffset.y));
+
+        Debug.Log("ANGLES");
+        Debug.Log(fixedLineStartAngle);
+        Debug.Log(fixedLineEndAngle);
+        /*Debug.Log("ORIGINAL POINTS");
+        Debug.Log(_startX);
+        Debug.Log(_startY);
+        Debug.Log(_endX);
+        Debug.Log(_endY);
+        Debug.Log("OFFSET & ANGLE");
+        Debug.Log(_pointOffset);
+        Debug.Log(_perpendicularAngle);
+        Debug.Log("COLLIDER PARTS");
+        Debug.Log(colliders[_lineIndex][_bendPointIndex][0].PointA);
+        Debug.Log(colliders[_lineIndex][_bendPointIndex][0].PointB);
+        Debug.Log(colliders[_lineIndex][_bendPointIndex][0].PointC);
+        Debug.Log(colliders[_lineIndex][_bendPointIndex][0].PointD);*/
+
+        // STEP 3:
+        // Second half after the bend collider.
+        _perpendicularAngle = fixedLineEndAngle + 90.0f;
+        _pointOffset = new Vector2(
+                (width / 2.0f) * Mathf.Cos(_perpendicularAngle * Mathf.Deg2Rad),
+                (width / 2.0f) * Mathf.Sin(_perpendicularAngle * Mathf.Deg2Rad));
+
+        //colliders[_lineIndex][_bendPointIndex][1] = new AngledRectCollider(Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+        colliders[_lineIndex][_bendPointIndex][1] = new AngledRectCollider(
+                new Vector2(
+                    bendPositions[_lineIndex][_bendPointIndex].x + _pointOffset.x,
+                    bendPositions[_lineIndex][_bendPointIndex].y + _pointOffset.y),
+                new Vector2(
+                    _endX + _pointOffset.x,
+                    _endY + _pointOffset.y),
+                new Vector2(
+                    _endX - _pointOffset.x,
+                    _endY - _pointOffset.y),
+                new Vector2(
+                    bendPositions[_lineIndex][_bendPointIndex].x - _pointOffset.x,
+                    bendPositions[_lineIndex][_bendPointIndex].y - _pointOffset.y));
     }
 
     /// <summary>
@@ -1061,9 +1241,12 @@ public class LineManager
                 if (_j < linePoints[_i].Count - 1) _allPointPositions.Add(bendPositions[_i][_j]);
             }
             lineRenderers[_i].positionCount = _allPointPositions.Count;
+            lineRenderers[_i].startWidth = width;
+            lineRenderers[_i].endWidth = width;
 
             lineRenderers[_i].SetPositions(_allPointPositions.ToArray());
             _allPointPositions.Clear();
+            
         }
     }
 
@@ -1163,13 +1346,6 @@ public class StationGridReference
         gridPosition = _gridPosition;
         removalPosition = _removalPosition;
     }
-
-    #endregion
-
-    #region METHODS
-
-    // Currently empty.
-
     #endregion
 }
 
@@ -1606,6 +1782,7 @@ public class Manager : MonoBehaviour
             }
         }
         lineManager = new LineManager(mouseData, stations, lineRenderers);
+        lineManager.DebugMode = true;
     }
 
     // Update is called once per frame
@@ -1819,15 +1996,48 @@ public class Manager : MonoBehaviour
         }
 
         Gizmos.color = Color.white;
-        for (int _i = 0; _i < stations.Count; _i++)
+        /*for (int _i = 0; _i < stations.Count; _i++)
         {
             if (stations[_i].DebugMode)
             {
+                //Gizmos.DrawSphere(stations[_i].LineBuiltCollider.PointA, 0.05f);
+                //Gizmos.DrawSphere(stations[_i].LineBuiltCollider.PointB, 0.05f);
+                //Gizmos.DrawSphere(stations[_i].LineBuiltCollider.PointC, 0.05f);
+                //Gizmos.DrawSphere(stations[_i].LineBuiltCollider.PointD, 0.05f);
                 for (int _j = 0; _j < 8; ++_j)
                 {
                     Gizmos.DrawSphere(stations[_i].AccessConnections[_j, 0], 0.05f);
                     Gizmos.DrawSphere(stations[_i].AccessConnections[_j, 1], 0.05f);
                     Gizmos.DrawSphere(stations[_i].AccessConnections[_j, 2], 0.05f);
+                }
+            }
+        }*/
+
+        if (lineManager.DebugMode)
+        {
+            for (int _i = 0; _i < 8; ++_i)
+            {
+                for (int _j = 0; _j < lineManager.Colliders[_i].Count; ++_j)
+                {
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][0].PointA, lineManager.Colliders[_i][_j][0].PointB);
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][0].PointB, lineManager.Colliders[_i][_j][0].PointC);
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][0].PointC, lineManager.Colliders[_i][_j][0].PointD);
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][0].PointD, lineManager.Colliders[_i][_j][0].PointA);
+
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][1].PointA, lineManager.Colliders[_i][_j][1].PointB);
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][1].PointB, lineManager.Colliders[_i][_j][1].PointC);
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][1].PointC, lineManager.Colliders[_i][_j][1].PointD);
+                    Gizmos.DrawLine(lineManager.Colliders[_i][_j][1].PointD, lineManager.Colliders[_i][_j][1].PointA);
+
+                    /*Gizmos.DrawSphere(lineManager.Colliders[_i][_j][0].PointA, 0.05f);
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][0].PointB, 0.05f);
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][0].PointC, 0.05f);
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][0].PointD, 0.05f);
+
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][1].PointA, 0.05f);
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][1].PointB, 0.05f);
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][1].PointC, 0.05f);
+                    Gizmos.DrawSphere(lineManager.Colliders[_i][_j][1].PointD, 0.05f);*/
                 }
             }
         }
