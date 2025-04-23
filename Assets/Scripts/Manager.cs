@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using TMPro.SpriteAssetUtilities;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.Rendering.Universal;
 
 /// <summary>
@@ -482,6 +483,54 @@ public class AngledRectCollider
 }
 #endregion
 
+public class EndT
+{
+    #region FIELDS
+    private GameObject accessor;
+    private AngledRectCollider collider;
+    private bool isVisible;
+    private Color color;
+    
+    #endregion
+
+    #region PROPERTIES
+    
+    #endregion
+
+    #region CONSTRUCTOR
+    public EndT (Color _color)
+    {
+        accessor = null;
+        collider = null;
+        isVisible = false;
+        color = _color;
+    }
+    #endregion
+
+    #region METHODS
+    public bool WithinCollider (Vector2 _point)
+    {
+        return collider.PositionInCollider(_point);
+    }
+
+    public void TiedLine ()
+    {
+
+    }
+
+    public void InjectEndT(GameObject _object)
+    {
+        accessor = _object;
+        collider = new AngledRectCollider(
+                new Vector2(accessor.transform.position.x - 0.2f, accessor.transform.position.y - 0.2f),
+                new Vector2(accessor.transform.position.x - 0.2f, accessor.transform.position.y + 0.2f),
+                new Vector2(accessor.transform.position.x + 0.2f, accessor.transform.position.y + 0.2f),
+                new Vector2(accessor.transform.position.x + 0.2f, accessor.transform.position.y - 0.2f));
+        accessor.GetComponent<SpriteRenderer>().color = color;
+    }
+    #endregion
+}
+
 public class Station
 {
     #region FIELDS
@@ -640,11 +689,52 @@ public class Point
     #region FIELDS
     private List<Point> line;
     private Station tiedStation;
-    private int accessEntryAngleIndex;
-    private int accessEntrySlot;
-    private int accessExitAngleIndex;
-    private int accessExitSlot;
-    private bool heldByMouse;
+
+    /// <summary>
+    /// Whether or not this point is the one held by the mouse.
+    /// </summary>
+    private bool isMouse;
+
+    /// <summary>
+    /// The angle which is a multiple of 45 degrees through which the line this point is a part of enters its station.
+    /// </summary>
+    private int entryAngleIndex;
+    /// <summary>
+    /// The slot of 3 in an access angle through which the line this point is a part of enters its station.
+    /// </summary>
+    private int entrySlot;
+    /// <summary>
+    /// The actual angle used when entering for this point.
+    /// </summary>
+    private int entryAngleTrue;
+
+    /// <summary>
+    /// The angle which is a multiple of 45 degrees through which the line this point is a part of exits its station.
+    /// </summary>
+    private int exitAngleIndex;
+    /// <summary>
+    /// The slot of 3 in an access angle through which the line this point is a part of exits its station.
+    /// </summary>
+    private int exitSlot;
+    /// <summary>
+    /// The actual angle used when exiting for this point.
+    /// </summary>
+    private int exitAngleTrue;
+
+    /// <summary>
+    /// The angle from this point's station to the mouse position.
+    /// </summary>
+    private float mouseAngleTrue;
+    /// <summary>
+    /// The previous angle from this point's station to the mouse.
+    /// Used for calculations of whether lines should bend left or right.
+    /// </summary>
+    private float mouseAngleOld;
+    /// <summary>
+    /// The mouse angle converted to be a multiple of 45. 
+    /// Set in reference to the entry / exit angle.
+    /// </summary>
+    private int mouseAngleFixed;
     #endregion
 
     #region PROPERTIES
@@ -657,23 +747,52 @@ public class Point
     /// </summary>
     public Station TiedStation { get { return tiedStation; } }
 
+    /// <summary>
+    /// Whether or not this point is the one held by the mouse.
+    /// </summary>
+    public bool IsMouse { get { return isMouse; } set { isMouse = value; } }
+
     #region ENTRY & EXITS
     /// <summary>
-    /// The angle this station should enter at into a station.
+    /// The angle which is a multiple of 45 degrees through which the line this point is a part of enters its station.
     /// </summary>
-    public int AccessEntryAngleIndex { get { return accessEntryAngleIndex; } set { accessEntryAngleIndex = value; } }
+    public int EntryAngleIndex { get { return entryAngleIndex; } set { entryAngleIndex = value; } }
     /// <summary>
-    /// Within one of the 8 directions lines can link up to a station, this point enters into the given slot of a direction.
+    /// The slot of 3 in an access angle through which the line this point is a part of enters its station.
     /// </summary>
-    public int AccessEntrySlot { get { return accessEntrySlot; } set { accessEntrySlot = value; } }
+    public int EntrySlot { get { return entrySlot; } set { entrySlot = value; } }
     /// <summary>
-    /// The angle this station should exit at from a station.
+    /// The actual angle used when entering for this point.
     /// </summary>
-    public int AccessExitAngleIndex { get { return accessExitAngleIndex; } set { accessExitAngleIndex = value; } }
+    public float EntryAngleTrue { get { return entryAngleTrue; } set { entryAngleTrue = value; } }
+
     /// <summary>
-    /// Within one of the 8 directions lines can link up to a station, this point exits from the given slot of a direction.
+    /// The angle which is a multiple of 45 degrees through which the line this point is a part of exits its station.
     /// </summary>
-    public int AccessExitSlot { get { return accessExitSlot; } set { accessExitSlot = value; } }
+    public int ExitAngleIndex { get { return exitAngleIndex; } set { exitAngleIndex = value; } }
+    /// <summary>
+    /// The slot of 3 in an access angle through which the line this point is a part of exits its station.
+    /// </summary>
+    public int ExitSlot { get { return exitSlot; } set { exitSlot = value; } }
+    /// <summary>
+    /// The actual angle used when exiting for this point.
+    /// </summary>
+    public float ExitAngleTrue { get { return exitAngleTrue; } set { exitAngleTrue = value; } }
+
+    /// <summary>
+    /// The angle from this point's station to the mouse position.
+    /// </summary>
+    public float MouseAngleTrue { get { return mouseAngleTrue; } set { mouseAngleTrue = value; } }
+    /// <summary>
+    /// The previous angle from this point's station to the mouse.
+    /// Used for calculations of whether lines should bend left or right.
+    /// </summary>
+    public float MouseAngleOld { get { return mouseAngleOld; } set { mouseAngleOld = value; } }
+    /// <summary>
+    /// The mouse angle converted to be a multiple of 45. 
+    /// Set in reference to the entry / exit angle.
+    /// </summary>
+    public int MouseAngleFixed { get { return mouseAngleFixed; } set { mouseAngleFixed = value; } }
     #endregion
     #endregion
 
@@ -706,7 +825,275 @@ public class Point
         tiedStation = _tiedStation;
         accessEntryAngleIndex = _accessEntryAngle;
         accessExitAngleIndex = _accessExitAngle;
+
+    }
+    #endregion
+}
+
+public class Line
+{
+    #region FIELDS
+    // General variables.
+    private GameObject accessor;
+    private LineManager manager;
+    private MouseData mouseData;
+    private List<LineRenderer> renderers;
+    private List<Point> points;
+    private List<Vector2> pointPositions;
+    private List<Vector2> bendPositions;
+    private List<AngledRectCollider[]> colliders;
+
+    // Mouse specific.
+    /// <summary>
+    /// The index into the 'points' list that the player's mouse is located at.
+    /// If set to -1 then this line doesn't currently contain the player's mouse.
+    /// </summary>
+    private int mouseIndex;
+
+    /// <summary>
+    /// Whether or not the line formed from the previous point to the mouse should bend right.
+    /// For the next point it will bend the opposite way as the previous.
+    /// </summary>
+    private bool bendRight;
+
+    /// <summary>
+    /// The point before the mouse in the 'points' list.
+    /// </summary>
+    private Point previousPoint;
+    /// <summary>
+    /// The index of the point before the mouse in the 'points' list.
+    /// </summary>
+    private int previousPointIndex;
+
+    /// <summary>
+    /// The point after the mouse in the 'points' list.
+    /// </summary>
+    private Point nextPoint;
+    /// <summary>
+    /// The index of the point after the mouse in the 'points' list.
+    /// </summary>
+    private int nextPointIndex;
+    #endregion
+
+    #region PROPERTIES
+
+    #endregion
+
+    #region CONSTRUCTORS
+    public Line(LineManager _manager, MouseData _mouseData)
+    {
+        accessor = null;
+        manager = _manager;
+        mouseData = _mouseData;
+
+        // STEP 2:
+        // Establish lists.
+        renderers = new List<LineRenderer>();
+        points = new List<Point> ();
+        pointPositions = new List<Vector2> ();
+        bendPositions = new List<Vector2> ();
+
+        // STEP 3:
+        // Establish mouse specific.
+        mouseIndex = -1;
+    }
+    #endregion
+
+    #region METHODS
+
+    public void CreateLine (Point _pointStart, Point _mousePoint)
+    {
+        // STEP 1:
+        // Add point values.
+        points.Add(_pointStart);
+        pointPositions.Add(_pointStart.TiedStation.StationTruePosition);
+
+        bendPositions.Add(Vector2.zero);
+        colliders.Add(new AngledRectCollider[2] { null, null });
+
+        points.Add(_mousePoint);
+        _mousePoint.IsMouse = true;
+        pointPositions.Add(mouseData.Position);
+
+        // STEP 2:
+        // Do extra calculations.
         
+    }
+
+    public void MouseCalculations(Point _point, int _bendIndex, bool _isEntry)
+    {
+        // Calculate the mouse angle.
+        _point.MouseAngleOld = _point.MouseAngleTrue;
+        _point.MouseAngleTrue =
+                Mathf.Floor(Mathf.Repeat(
+                    Mathf.Atan2(
+                        _point.TiedStation.StationTruePosition.y
+                        - mouseData.Position.y,
+                        _point.TiedStation.StationTruePosition.x
+                        - mouseData.Position.x)
+                    * Mathf.Rad2Deg,
+                    360.0f));
+
+        // Determine if bend should be left or right.
+        if (bendRight)
+        {
+            if (Mathf.Floor(_point.MouseAngleOld / 45.0f) < Mathf.Floor(_point.MouseAngleTrue / 45.0f) &&
+                !(Mathf.Floor(_point.MouseAngleOld / 45.0f) == 0 && Mathf.Floor(_point.MouseAngleTrue / 45.0f) == 7))
+            {
+                bendRight = false;
+            }
+        }
+        else
+        {
+            if (Mathf.Floor(_point.MouseAngleOld / 45.0f) > Mathf.Floor(_point.MouseAngleTrue / 45.0f) &&
+                !(Mathf.Floor(_point.MouseAngleOld / 45.0f) == 7 && Mathf.Floor(_point.MouseAngleTrue / 45.0f) == 0))
+            {
+                bendRight = true;
+            }
+        }
+
+        // Set values for entry or exit.
+        if (_isEntry)
+        {
+            // Calculate the angle using the mouse position.
+            _point.EntryAngleTrue = (int)Mathf.Repeat(Mathf.Floor(_point.MouseAngleTrue / 45.0f) * 45.0f, 360);
+            if (Mathf.Abs(_point.MouseAngleTrue - _point.EntryAngleTrue) < 5.0f)
+            {
+                _point.MouseAngleFixed = (int)_point.EntryAngleTrue;
+            }
+            else if (_point.EntryAngleTrue == 0)
+            {
+                _point.MouseAngleFixed = (_point.EntryAngleTrue > 270) ? 315 : 45;
+            }
+            else
+            {
+                _point.MouseAngleFixed =
+                        (_point.MouseAngleTrue < _point.EntryAngleTrue)
+                        ? (int)Mathf.Repeat(_point.EntryAngleTrue - 45.0f, 360)
+                        : (int)Mathf.Repeat(_point.EntryAngleTrue + 45.0f, 360);
+            }
+
+            // Calculate the entry slot.
+            _point.EntryAngleIndex = (int)(_point.EntryAngleTrue / 45.0f);
+            for (int _i = 0; _i < 3; ++_i)
+            {
+                if (_point.TiedStation.AccessConnections[_point.EntryAngleIndex, _i] == null)
+                {
+                    _point.TiedStation.SetPointConnection(_point.EntryAngleIndex, _i, _point);
+                    _point.EntrySlot = _i;
+                    break;
+                }
+            }
+
+            // Calculate bend position.
+            float _positionX =
+                    (_point.EntryAngleIndex != -1)
+                    ? _point.TiedStation.AccessConnections
+                        [_point.EntryAngleIndex,
+                         _point.EntrySlot].x
+                    : _point.TiedStation.StationTruePosition.x;
+            float _positionY =
+                    (_point.EntryAngleIndex != -1)
+                    ? _point.TiedStation.AccessConnections
+                        [_point.EntryAngleIndex,
+                         _point.EntrySlot].y
+                    : _point.TiedStation.StationTruePosition.y;
+            if (bendRight)
+            {
+                if (_point.EntryAngleTrue == 0 && _point.MouseAngleFixed == 45)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX + Mathf.Abs(mouseData.Y - _positionY), mouseData.Y);
+                }
+                else if (_point.EntryAngleTrue == 45 && _point.MouseAngleFixed == 90)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX, mouseData.Y - Mathf.Abs(_positionX - mouseData.X));
+                }
+                else if (_point.EntryAngleTrue == 90 && _point.MouseAngleFixed == 135)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X, _positionY + Mathf.Abs(mouseData.X - _positionX));
+                }
+                else if (_point.EntryAngleTrue == 135 && _point.MouseAngleFixed == 180)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X + Mathf.Abs(_positionY - mouseData.Y), _positionY);
+                }
+                else if (_point.EntryAngleTrue == 180 && _point.MouseAngleFixed == 225)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX - Mathf.Abs(mouseData.Y - _positionY), mouseData.Y);
+                }
+                else if (_point.EntryAngleTrue == 225 && _point.MouseAngleFixed == 270)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX, mouseData.Y + Mathf.Abs(_positionX - mouseData.X));
+                }
+                else if (_point.EntryAngleTrue == 270 && _point.MouseAngleFixed == 315)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X, _positionY - Mathf.Abs(mouseData.X - _positionX));
+                }
+                else if (_point.EntryAngleTrue == 315 && _point.MouseAngleFixed == 0)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X - Mathf.Abs(_positionY - mouseData.Y), _positionY);
+                }
+            }
+            else
+            {
+                if (_point.EntryAngleTrue == 0 && _point.MouseAngleFixed == 45)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X - Mathf.Abs(_positionY - mouseData.Y), _positionY);
+                }
+                else if (_point.EntryAngleTrue == 45 && _point.MouseAngleFixed == 90)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X, _positionY + Mathf.Abs(mouseData.X - _positionX));
+                }
+                else if (_point.EntryAngleTrue == 90 && _point.MouseAngleFixed == 135)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX, mouseData.Y - Mathf.Abs(_positionX - mouseData.X));
+                }
+                else if (_point.EntryAngleTrue == 135 && _point.MouseAngleFixed == 180)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX - Mathf.Abs(mouseData.Y - _positionY), mouseData.Y);
+                }
+                else if (_point.EntryAngleTrue == 180 && _point.MouseAngleFixed == 225)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X + Mathf.Abs(_positionY - mouseData.Y), _positionY);
+                }
+                else if (_point.EntryAngleTrue == 225 && _point.MouseAngleFixed == 270)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(mouseData.X, _positionY - Mathf.Abs(mouseData.X - _positionX));
+                }
+                else if (_point.EntryAngleTrue == 270 && _point.MouseAngleFixed == 315)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX, mouseData.Y + Mathf.Abs(_positionX - mouseData.X));
+                }
+                else if (_point.EntryAngleTrue == 315 && _point.MouseAngleFixed == 0)
+                {
+                    bendPositions[_bendIndex] =
+                            new Vector2(_positionX + Mathf.Abs(mouseData.Y - _positionY), mouseData.Y);
+                }
+            }
+        }
+        else
+        {
+            // TODO - make it so that this just sets values directly and all of above is done with local variables to reduce code length.
+        }
+    }
+
+    public void InjectLine(GameObject _object)
+    {
+        accessor = _object;
     }
     #endregion
 }
